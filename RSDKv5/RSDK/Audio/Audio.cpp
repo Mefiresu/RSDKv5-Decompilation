@@ -34,6 +34,8 @@ float linearInterpolationLookup[LINEAR_INTERPOLATION_LOOKUP_LENGTH];
 #include "SDL2/SDL2AudioDevice.cpp"
 #elif RETRO_AUDIODEVICE_OBOE
 #include "Oboe/OboeAudioDevice.cpp"
+#elif RETRO_AUDIODEVICE_WII
+#include "Wii/WiiAudioDevice.cpp"
 #endif
 
 uint8 AudioDeviceBase::initializedAudioChannels = false;
