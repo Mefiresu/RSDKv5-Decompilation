@@ -91,6 +91,7 @@ enum GameRegions {
 #define RETRO_iOS     (6)
 #define RETRO_ANDROID (7)
 #define RETRO_UWP     (8)
+#define RETRO_WII     (9)
 
 // ============================
 // PLATFORMS (used mostly in legacy but could come in handy here)
@@ -142,6 +143,9 @@ enum GameRegions {
 #elif defined __linux__
 #define RETRO_PLATFORM   (RETRO_LINUX)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
+#elif defined __wii__
+#define RETRO_PLATFORM   (RETRO_WII)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
 #else
 #define RETRO_PLATFORM   (RETRO_WIN)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
@@ -171,6 +175,7 @@ enum GameRegions {
 #define RETRO_RENDERDEVICE_GLFW (0)
 #define RETRO_RENDERDEVICE_VK   (0)
 #define RETRO_RENDERDEVICE_EGL  (0)
+#define RETRO_RENDERDEVICE_GX   (0)
 
 // ============================
 // AUDIO DEVICE BACKENDS
@@ -184,6 +189,7 @@ enum GameRegions {
 #ifndef RETRO_AUDIODEVICE_PORT
 #define RETRO_AUDIODEVICE_PORT (0)
 #endif
+#define RETRO_AUDIODEVICE_WII  (0)
 
 // ============================
 // INPUT DEVICE BACKENDS
@@ -197,6 +203,7 @@ enum GameRegions {
 #define RETRO_INPUTDEVICE_SDL2   (0)
 #define RETRO_INPUTDEVICE_GLFW   (0)
 #define RETRO_INPUTDEVICE_PDBOAT (0)
+#define RETRO_INPUTDEVICE_WII    (0)
 
 // ============================
 // USER CORE BACKENDS
@@ -408,6 +415,15 @@ enum GameRegions {
 #undef RETRO_INPUTDEVICE_SDL2
 #define RETRO_INPUTDEVICE_SDL2 (1)
 
+#elif RETRO_PLATFORM == RETRO_WII
+
+#undef RETRO_RENDERDEVICE_GX
+#define RETRO_RENDERDEVICE_GX (1)
+#undef RETRO_AUDIODEVICE_WII
+#define RETRO_AUDIODEVICE_WII (1)
+#undef RETRO_INPUTDEVICE_WII
+#define RETRO_INPUTDEVICE_WII (1)
+
 #endif
 
 #if RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_UWP
@@ -515,7 +531,9 @@ enum GameRegions {
 #endif
 #endif
 
+#if RETRO_PLATFORM != RETRO_WII // FIXME
 #include <theora/theoradec.h>
+#endif
 
 // ============================
 // ENGINE INCLUDES

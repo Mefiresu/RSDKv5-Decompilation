@@ -213,7 +213,7 @@ $(shell mkdir -p $(GAME_OBJDIR))
 $(GAME_OBJDIR)/%.o: $(GAME_PREBUILD) %.c
 	@mkdir -p $(@D)
 	@echo compiling $<...
-	$(CC) -c -fPIC $(CFLAGS_ALL) $(GAME_FLAGS) $(GAME_INCLUDES) $(DEFINES) $< -o $@
+	$(CC) -c $(CFLAGS_ALL) $(GAME_FLAGS) $(GAME_INCLUDES) $(DEFINES) $< -o $@
 	@echo done $<
 endif
 

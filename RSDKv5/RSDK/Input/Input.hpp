@@ -60,6 +60,9 @@ enum InputDeviceAPIs {
 #if RETRO_INPUTDEVICE_PDBOAT
     DEVICE_API_PDBOAT // custom-made for android (paddleboat API)
 #endif
+#if RETRO_INPUTDEVICE_WII
+    DEVICE_API_WII
+#endif
 };
 
 enum ControllerKeys {
@@ -502,6 +505,10 @@ extern int32 gamePadCount;
 
 #if RETRO_INPUTDEVICE_PDBOAT
 #include "Paddleboat/PDBInputDevice.hpp"
+#endif
+
+#if RETRO_INPUTDEVICE_WII
+#include "Wii/WiiInputDevice.hpp"
 #endif
 
 // Initializes the input devices & the backend APIs powering em

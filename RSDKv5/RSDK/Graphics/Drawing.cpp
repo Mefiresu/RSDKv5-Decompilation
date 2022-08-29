@@ -141,6 +141,8 @@ const RenderVertex rsdkVertexBuffer[24] =
 #include "Vulkan/VulkanRenderDevice.cpp"
 #elif RETRO_RENDERDEVICE_EGL
 #include "EGL/EGLRenderDevice.cpp"
+#elif RETRO_RENDERDEVICE_GX
+#include "GX/GXRenderDevice.cpp"
 #endif
 
 RenderDevice::WindowInfo RenderDevice::displayInfo;

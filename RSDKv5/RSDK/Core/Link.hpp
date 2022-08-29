@@ -399,7 +399,7 @@ void LinkGameLogic(EngineInfo info);
 // ORIGINAL CLASS
 
 // Windows.h already included by master header
-#if !(RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_SWITCH)
+#if !(RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WII)
 #include <dlfcn.h>
 #endif
 
@@ -425,8 +425,8 @@ public:
 #endif
 #endif
 
-#if RETRO_PLATFORM == RETRO_SWITCH
-    // do nothing for switch
+#if RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WII
+    // do nothing for switch or Wii
     static inline Handle Open(std::string path) { return NULL; }
 #else
     static inline Handle PlatformLoadLibrary(std::string path)
@@ -481,7 +481,7 @@ public:
 
     static inline void Close(Handle handle)
     {
-#if RETRO_PLATFORM == RETRO_SWITCH
+#if RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WII
         return;
 #else
         if (handle)
@@ -495,7 +495,7 @@ public:
 
     static inline void *GetSymbol(Handle handle, const char *symbol)
     {
-#if RETRO_PLATFORM == RETRO_SWITCH
+#if RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WII
         return NULL;
 #else
         if (!handle)
@@ -510,7 +510,7 @@ public:
 
     static inline char *GetError()
     {
-#if RETRO_PLATFORM == RETRO_SWITCH
+#if RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WII
         return NULL;
 #else
 #if RETRO_PLATFORM == RETRO_WIN
