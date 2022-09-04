@@ -4,21 +4,14 @@ class RenderDevice : public RenderDeviceBase
 {
 public:
     struct WindowInfo {
-        typedef struct {
-            uint32 width;
-            uint32 height;
-            uint32 refresh_rate;
-        } BasicWindowInfo;
-        union {
-            struct {
-                uint32 width;
-                uint32 height;
-                uint32 refresh_rate;
-            };
-            BasicWindowInfo internal;
-        } * displays;
-    };
-    static WindowInfo displayInfo;
+    union {
+      uint32 width;
+      uint32 height;
+      uint32 refresh_rate;
+    } * displays;
+  };
+
+  static WindowInfo displayInfo;
 
     static bool Init();
     static void CopyFrameBuffer();
