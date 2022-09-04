@@ -1,16 +1,14 @@
 #include <gccore.h>
 #include <malloc.h>
-#include <debug.h>
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
 static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
-static GXTexObj texobj;
 static Mtx view;
 
 static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 static int fb = 0; // Current external framebuffer
 static GXRModeObj *vmode;
-static GXTexObj fbTex; // Texture containing the game framebuffer
+static GXTexObj fbTex; // Texture object for the game framebuffer
 
 #define HASPECT 			320
 #define VASPECT 			240
@@ -126,7 +124,6 @@ bool RenderDevice::Init() {
 
     GX_SetZMode (GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate (GX_TRUE);
-    GX_SetNumChans(1);
 
     guOrtho(p, 480/2, -(480/2), -(640/2), 640/2, 100, 1000); // matrix, t, b, l, r, n, f
     GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
@@ -137,7 +134,7 @@ bool RenderDevice::Init() {
     GX_SetVtxDesc (GX_VA_TEX0, GX_DIRECT);
 
     GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+    GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_U8, 0);
     GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
     GX_SetArray (GX_VA_POS, square, 3 * sizeof (s16));
@@ -150,43 +147,42 @@ bool RenderDevice::Init() {
     GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
 
-    memset (&view, 0, sizeof (Mtx));
     guLookAt(view, &cam.pos, &cam.up, &cam.view);
     GX_LoadPosMtxImm (view, GX_PNMTX0);
 
     GX_InvVtxCache ();	// update vertex cache
 
-    GX_InitTexObj(&fbTex, screens[0].frameBuffer, 640, 480, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GX_LoadTexObj (&fbTex, GX_TEXMAP0);
-
     // Game stuff
-    scanlines = (ScanlineInfo *) malloc(SCREEN_YSIZE * sizeof(ScanlineInfo));
+    scanlines = (ScanlineInfo *) malloc(240 * sizeof(ScanlineInfo));
     if (!scanlines)
         return false;
 
     videoSettings.windowed     = false;
-    videoSettings.windowWidth  = vmode->fbWidth;
-    videoSettings.windowHeight = vmode->xfbHeight;
+    videoSettings.windowWidth  = 640;
+    videoSettings.windowHeight = 480;
 
     engine.inFocus = 1;
     videoSettings.windowState = WINDOWSTATE_ACTIVE;
     videoSettings.dimMax = 1.0;
     videoSettings.dimPercent = 1.0;
 
-    RSDK::SetScreenSize(0, 640, 480);
-
-    memset(screens[0].frameBuffer, 0, 640 * 480 * sizeof(uint16));
+    RSDK::SetScreenSize(0, 320, 240);
+    memset(screens[0].frameBuffer, 0, 320*240 * sizeof(uint16));
 
     return true;
 }
 
-void RenderDevice::CopyFrameBuffer() {}
+void RenderDevice::CopyFrameBuffer() {
+    GX_InitTexObj(&fbTex, screens[0].frameBuffer, 320, 240, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GX_InitTexObjFilterMode(&fbTex, GX_NEAR, GX_NEAR); // Nearest neighbor filtering
+}
 
 void RenderDevice::FlipScreen() {
     // clear texture objects
     GX_InvVtxCache();
     GX_InvalidateTexAll();
-    DCFlushRange(screens[0].frameBuffer, 640*480*sizeof(uint16));
+    DCFlushRange(screens[0].frameBuffer, 320*240 *sizeof(uint16));
+
     GX_LoadTexObj(&fbTex, GX_TEXMAP0);
     draw_square(view);
     GX_SetColorUpdate(GX_TRUE);
