@@ -1,29 +1,20 @@
+#include <cstdint>
+#include <ogc/texconv.h>
 #include <gccore.h>
 #include <malloc.h>
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
 static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
-static Mtx view;
 
 static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 static int fb = 0; // Current external framebuffer
 static GXRModeObj *vmode;
 static GXTexObj fbTex; // Texture object for the game framebuffer
+static uint16 *fbGX; // Framebuffer texture
 
 #define HASPECT 			320
 #define VASPECT 			240
-typedef struct tagcamera
-{
-    guVector pos;
-    guVector up;
-    guVector view;
-}
-camera;
-static camera cam = {
-    {0.0F, 0.0F, 0.0F},
-    {0.0F, 0.5F, 0.0F},
-    {0.0F, 0.0F, -0.5F}
-};
+
 static s16 square[] ATTRIBUTE_ALIGN (32) =
 {
   /*
@@ -45,15 +36,11 @@ draw_vert (u8 pos, u8 c, f32 s, f32 t)
 }
 
 static inline void
-draw_square (Mtx v)
+draw_square ()
 {
-    Mtx m;			// model matrix.
     Mtx mv;			// modelview matrix.
 
-    guMtxIdentity (m);
-    guMtxTransApply (m, m, 0, 0, -100);
-    guMtxConcat (v, m, mv);
-
+    guMtxIdentity (mv);
     GX_LoadPosMtxImm (mv, GX_PNMTX0);
     GX_Begin (GX_QUADS, GX_VTXFMT0, 4);
     draw_vert (0, 0, 0.0, 0.0);
@@ -97,35 +84,36 @@ bool RenderDevice::Init() {
     CON_Init(xfb[0],20,20,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*VI_DISPLAY_PIX_SZ);
 
     /*** Clear out FIFO area ***/
-    memset (&gp_fifo, 0, DEFAULT_FIFO_SIZE);
+    memset (gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
     /*** Initialise GX ***/
-    GX_Init (&gp_fifo, DEFAULT_FIFO_SIZE);
+    GX_Init (gp_fifo, DEFAULT_FIFO_SIZE);
 
     GXColor background = { 0, 0, 0, 0xff };
     GX_SetCopyClear (background, 0x00ffffff);
 
     Mtx44 p;
-    int df = 1; // deflicker on/off
+    int df = 0; // deflicker on/off
 
     GX_SetViewport (0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
     GX_SetDispCopyYScale ((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
     GX_SetScissor (0, 0, vmode->fbWidth, vmode->efbHeight);
 
     GX_SetDispCopySrc (0, 0, vmode->fbWidth, vmode->efbHeight);
-    GX_SetDispCopyDst (vmode->fbWidth, vmode->xfbHeight);
+    f32 y_scale   = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
+    u16 xfbWidth  = VIDEO_PadFramebufferWidth(vmode->fbWidth);
+    u16 xfbHeight = GX_SetDispCopyYScale((f32)y_scale);
+    GX_SetDispCopyDst((u16)xfbWidth, (u16)xfbHeight);
     GX_SetCopyFilter (vmode->aa, vmode->sample_pattern, (df == 1) ? GX_TRUE : GX_FALSE, vmode->vfilter);
 
     GX_SetFieldMode (vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
-    GX_SetPixelFmt (GX_PF_RGB8_Z24, GX_ZC_LINEAR);
     GX_SetDispCopyGamma (GX_GM_1_0);
     GX_SetCullMode (GX_CULL_NONE);
-    GX_SetBlendMode(GX_BM_BLEND,GX_BL_DSTALPHA,GX_BL_INVSRCALPHA,GX_LO_CLEAR);
 
     GX_SetZMode (GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate (GX_TRUE);
 
-    guOrtho(p, 480/2, -(480/2), -(640/2), 640/2, 100, 1000); // matrix, t, b, l, r, n, f
+    guOrtho(p, VASPECT, -(VASPECT), -(HASPECT), HASPECT, 0, 100); // matrix, t, b, l, r, n, f
     GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
 
     GX_ClearVtxDesc ();
@@ -142,50 +130,82 @@ bool RenderDevice::Init() {
     GX_SetNumTexGens (1);
     GX_SetNumChans (0);
 
-    GX_SetTexCoordGen (GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
-
     GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
-
-    guLookAt(view, &cam.pos, &cam.up, &cam.view);
-    GX_LoadPosMtxImm (view, GX_PNMTX0);
-
-    GX_InvVtxCache ();	// update vertex cache
+    GX_SetTexCoordGen (GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+    GX_InvalidateTexAll();
 
     // Game stuff
-    scanlines = (ScanlineInfo *) malloc(240 * sizeof(ScanlineInfo));
-    if (!scanlines)
-        return false;
+    scanlines  = (ScanlineInfo *)malloc(SCREEN_YSIZE * sizeof(ScanlineInfo));
+    memset(scanlines, 0, SCREEN_YSIZE * sizeof(ScanlineInfo));
 
     videoSettings.windowed     = false;
-    videoSettings.windowWidth  = 640;
-    videoSettings.windowHeight = 480;
+    videoSettings.windowWidth  = 320;
+    videoSettings.windowHeight = 240;
 
     engine.inFocus = 1;
     videoSettings.windowState = WINDOWSTATE_ACTIVE;
     videoSettings.dimMax = 1.0;
     videoSettings.dimPercent = 1.0;
 
-    RSDK::SetScreenSize(0, 320, 240);
-    memset(screens[0].frameBuffer, 0, 320*240 * sizeof(uint16));
+    // Init framebuffer texture
+    int width = 320;
+    fbGX = (uint16 *)memalign(32, width * SCREEN_YSIZE * sizeof(uint16));
+    RSDK::SetScreenSize(0, width, SCREEN_YSIZE);
+    memset(screens[0].frameBuffer, 0, width * SCREEN_YSIZE * sizeof(uint16));
+
+    InitInputDevices();
 
     return true;
 }
 
-void RenderDevice::CopyFrameBuffer() {
-    GX_InitTexObj(&fbTex, screens[0].frameBuffer, 320, 240, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GX_InitTexObjFilterMode(&fbTex, GX_NEAR, GX_NEAR); // Nearest neighbor filtering
+// Converts the RGB565 framebuffer to a tiled texture format the Wii can support
+void fb_to_wii_texture(void *dst, const void *src, int32_t width, int32_t height) {
+    uint32_t *dst32 = (uint32_t *)dst;
+    const uint32_t *src32 = (const uint32_t *)src;
+    const uint32_t *tmp_src32;
+
+    for (int y = 0; y < height >> 2; y++) {
+
+        tmp_src32 = src32;
+        for (int x = 0; x < width >> 2; x++) {
+            int32_t width_2 = width / 2;
+            dst32[0] = src32[0x000];
+            dst32[1] = src32[0x001];
+            dst32[2] = src32[width_2 + 0x000];
+            dst32[3] = src32[width_2 + 0x001];
+            dst32[4] = src32[width + 0x000]; // width / 2 * 2
+            dst32[5] = src32[width + 0x001]; // width / 2 * 2
+            dst32[6] = src32[width_2*3 + 0x000];
+            dst32[7] = src32[width_2*3 + 0x001];
+
+            src32 += 2;
+            dst32 += 8;
+        }
+
+        src32 = tmp_src32 + width*2; // src32 = tmp_src32 + 0x400; // + 1024
+    }
 }
 
-void RenderDevice::FlipScreen() {
+void RenderDevice::CopyFrameBuffer() {
+    fb_to_wii_texture(fbGX, screens[0].frameBuffer, screens[0].pitch, SCREEN_YSIZE);
+    //MakeTexture565(screens[0].frameBuffer, fbGX, screens[0].pitch, SCREEN_YSIZE); // FIXME: Understand and implement this better for a width != 512
+    GX_InitTexObj(&fbTex, fbGX, screens[0].pitch, SCREEN_YSIZE, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GX_InitTexObjFilterMode(&fbTex, GX_NEAR, GX_NEAR); // Nearest neighbor filtering
+
     // clear texture objects
     GX_InvVtxCache();
     GX_InvalidateTexAll();
-    DCFlushRange(screens[0].frameBuffer, 320*240 *sizeof(uint16));
+    DCFlushRange(fbGX, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
 
     GX_LoadTexObj(&fbTex, GX_TEXMAP0);
-    draw_square(view);
-    GX_SetColorUpdate(GX_TRUE);
+}
+
+void RenderDevice::FlipScreen() {
+    draw_square();
+
+    GX_SetZMode (GX_TRUE, GX_LEQUAL, GX_TRUE);
+    GX_SetColorUpdate (GX_TRUE);
 
     fb ^= 1;  // Toggle framebuffer index
     GX_CopyDisp(xfb[fb], GX_TRUE);
