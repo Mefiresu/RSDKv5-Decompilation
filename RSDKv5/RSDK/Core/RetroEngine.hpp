@@ -434,6 +434,7 @@ enum GameRegions {
 #define RETRO_AUDIODEVICE_WII (1)
 #undef RETRO_INPUTDEVICE_WII
 #define RETRO_INPUTDEVICE_WII (1)
+#undef RETRO_INPUTDEVICE_KEYBOARD
 
 #endif
 
