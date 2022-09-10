@@ -206,6 +206,9 @@ void RSDK::UpdateStreamBuffer(ChannelInfo *channel)
 
 void RSDK::LoadStream(ChannelInfo *channel)
 {
+#if RETRO_PLATFORM == RETRO_WII // FIXME
+    return;
+#endif
     if (channel->state != CHANNEL_LOADING_STREAM)
         return;
 
@@ -299,6 +302,9 @@ int32 RSDK::PlayStream(const char *filename, uint32 slot, uint32 startPos, uint3
 
 void RSDK::LoadSfxToSlot(char *filename, uint8 slot, uint8 plays, uint8 scope)
 {
+#if RETRO_PLATFORM == RETRO_WII // FIXME
+    return;
+#endif
     FileInfo info;
     InitFileInfo(&info);
 
