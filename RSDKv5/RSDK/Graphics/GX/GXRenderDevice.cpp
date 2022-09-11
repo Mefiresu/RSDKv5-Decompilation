@@ -1,6 +1,6 @@
-#include <cstdint>
 #include <gccore.h>
 #include <malloc.h>
+#include <wiiuse/wpad.h>
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
 static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
@@ -15,19 +15,15 @@ static int actualWidth; // Actual game framebuffer width
 
 static int viewWidth, viewHeight; // Wii framebuffer size
 
-#define HASPECT 			320
-#define VASPECT 			240
+#define HASPECT (320)
+#define VASPECT (240)
 
 static s16 square[] ATTRIBUTE_ALIGN (32) =
 {
-  /*
-   * X,   Y,  Z
-   * Values set are for roughly 4:3 aspect
-   */
-    -HASPECT,  VASPECT, 0,	// 0
-     HASPECT,  VASPECT, 0,	// 1
-     HASPECT, -VASPECT, 0,	// 2
-    -HASPECT, -VASPECT, 0	// 3
+    -HASPECT,  VASPECT, 0,
+     HASPECT,  VASPECT, 0,
+     HASPECT, -VASPECT, 0,
+    -HASPECT, -VASPECT, 0
 };
 
 static inline void
@@ -42,7 +38,7 @@ draw_vert (u8 pos, u8 c, f32 s, f32 t)
 static inline void
 draw_square ()
 {
-    Mtx mv;			// modelview matrix.
+    Mtx mv;
 
     guMtxIdentity (mv);
     GX_LoadPosMtxImm (mv, GX_PNMTX0);
@@ -101,12 +97,12 @@ bool RenderDevice::Init() {
         viewWidth = 640;
     }
     if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
-		vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
-		vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
-	} else {
-		vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
-		vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
-	}
+        vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
+        vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
+    } else {
+        vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
+        vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
+    }
     /* Set up the video system with the chosen mode */
     VIDEO_Configure(vmode);
 
@@ -172,9 +168,12 @@ bool RenderDevice::Init() {
     return true;
 }
 
-// Converts the RGB565 framebuffer to a tiled texture format the Wii can support
-static inline
-void fb_to_wii_texture(void *dst, const void *src, int32_t width, int32_t height) {
+/**
+ * Converts the RGB565 framebuffer to a tiled texture format the Wii can support.
+ * Equivalent to libogc's MakeTexture565 without the hardcoded texture size.
+ */
+static inline void
+fb_to_wii_texture(void *dst, const void *src, int32_t width, int32_t height) {
     uint32_t *dst32 = (uint32_t *)dst;
     const uint32_t *src32 = (const uint32_t *)src;
     const uint32_t *tmp_src32;
@@ -197,7 +196,7 @@ void fb_to_wii_texture(void *dst, const void *src, int32_t width, int32_t height
             dst32 += 8;
         }
 
-        src32 = tmp_src32 + width*2; // src32 = tmp_src32 + 0x400; // + 1024
+        src32 = tmp_src32 + width*2;
     }
 }
 
@@ -265,7 +264,13 @@ void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yP
 }
 
 bool RenderDevice::ProcessEvents() {
-    return true;
+    // Close when pressing home
+    WPAD_ScanPads();
+    if (WPAD_ButtonsDown(0) & WPAD_BUTTON_HOME) {
+        isRunning = false;
+    }
+
+    return false;
 }
 
 void RenderDevice::InitFPSCap() {
