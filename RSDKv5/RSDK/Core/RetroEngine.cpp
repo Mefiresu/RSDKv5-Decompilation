@@ -1370,6 +1370,14 @@ static void initNxLink()
 }
 #endif
 
+#if __wii__
+#include <debug.h>
+#include <ogcsys.h>
+#include <gccore.h>
+#include <wiiuse/wpad.h>
+#include <fat.h>
+#endif
+
 void RSDK::InitCoreAPI()
 {
 #if RETRO_RENDERDEVICE_DIRECTX9 || RETRO_RENDERDEVICE_DIRECTX11
@@ -1380,6 +1388,13 @@ void RSDK::InitCoreAPI()
 
 #ifdef __SWITCH__
     // initNxLink();
+#endif
+
+#if __wii__
+    if (!fatInitDefault()) {
+        exit(1);
+    }
+    DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
 #endif
 
 #if RETRO_RENDERDEVICE_SDL2 || RETRO_AUDIODEVICE_SDL2 || RETRO_INPUTDEVICE_SDL2
