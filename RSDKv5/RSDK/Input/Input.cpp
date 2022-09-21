@@ -52,6 +52,10 @@ int32 RSDK::gamePadCount               = 0;
 #include "Paddleboat/PDBInputDevice.cpp"
 #endif
 
+#if RETRO_INPUTDEVICE_WII
+#include "Wii/WiiInputDevice.cpp"
+#endif
+
 void RSDK::RemoveInputDevice(InputDevice *targetDevice)
 {
     if (targetDevice) {
@@ -130,6 +134,10 @@ void RSDK::InitInputDevices()
 
 #if RETRO_INPUTDEVICE_PDBOAT
     SKU::InitPaddleboatInputAPI();
+#endif
+
+#if RETRO_INPUTDEVICE_WII
+    SKU::InitWiiInputAPI();
 #endif
 }
 

@@ -7,4 +7,8 @@ struct InputDeviceWii : InputDevice {
     void CloseDevice();
 };
 
+void InitWiiInputAPI();
+
+InputDeviceWii *InitWiiInputDevice(uint32 id);
+
 } // namespace SKU
