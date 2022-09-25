@@ -6,7 +6,9 @@
 
 #define STB_VORBIS_NO_PUSHDATA_API
 #define STB_VORBIS_NO_STDIO
+#if RETRO_PLATFORM != RETRO_WII // Wii needs s16 conversion from stb_vorbis
 #define STB_VORBIS_NO_INTEGER_CONVERSION
+#endif
 #include "stb_vorbis/stb_vorbis.c"
 
 stb_vorbis *vorbisInfo = NULL;
@@ -176,10 +178,14 @@ void AudioDeviceBase::InitAudioChannels()
 void RSDK::UpdateStreamBuffer(ChannelInfo *channel)
 {
     int32 bufferRemaining = MIX_BUFFER_SIZE;
-    float *buffer         = channel->samplePtr;
+    SAMPLE_FORMAT *buffer = channel->samplePtr;
 
     for (int32 s = 0; s < MIX_BUFFER_SIZE;) {
+#if RETRO_PLATFORM == RETRO_WII
+        int32 samples = stb_vorbis_get_samples_short_interleaved(vorbisInfo, 2, buffer, bufferRemaining) * 2;
+#else
         int32 samples = stb_vorbis_get_samples_float_interleaved(vorbisInfo, 2, buffer, bufferRemaining) * 2;
+#endif
         if (!samples) {
             if (channel->loop == 1 && stb_vorbis_seek_frame(vorbisInfo, streamLoopPoint)) {
                 // we're looping & the seek was successful, get more samples
@@ -187,7 +193,7 @@ void RSDK::UpdateStreamBuffer(ChannelInfo *channel)
             else {
                 channel->state   = CHANNEL_IDLE;
                 channel->soundID = -1;
-                memset(buffer, 0, sizeof(float) * bufferRemaining);
+                memset(buffer, 0, sizeof(SAMPLE_FORMAT) * bufferRemaining);
 
                 break;
             }
@@ -204,9 +210,6 @@ void RSDK::UpdateStreamBuffer(ChannelInfo *channel)
 
 void RSDK::LoadStream(ChannelInfo *channel)
 {
-#if RETRO_PLATFORM == RETRO_WII // FIXME
-    return;
-#endif
     if (channel->state != CHANNEL_LOADING_STREAM)
         return;
 
@@ -300,9 +303,6 @@ int32 RSDK::PlayStream(const char *filename, uint32 slot, int32 startPos, uint32
 
 void RSDK::LoadSfxToSlot(char *filename, uint8 slot, uint8 plays, uint8 scope)
 {
-#if RETRO_PLATFORM == RETRO_WII // FIXME
-    return;
-#endif
     FileInfo info;
     InitFileInfo(&info);
 
@@ -374,16 +374,21 @@ void RSDK::LoadSfxToSlot(char *filename, uint8 slot, uint8 plays, uint8 scope)
                 if (sampleBits == 16)
                     length /= 2;
 
-                AllocateStorage((void **)&sfxList[slot].buffer, sizeof(float) * length, DATASET_SFX, false);
+                AllocateStorage((void **)&sfxList[slot].buffer, sizeof(SAMPLE_FORMAT) * length, DATASET_SFX, false);
                 sfxList[slot].length = length;
 
-                // Convert the sample data to F32 format
-                float *buffer = (float *)sfxList[slot].buffer;
+                // Convert the sample data to SAMPLE_FORMAT
+                SAMPLE_FORMAT *buffer = (SAMPLE_FORMAT *)sfxList[slot].buffer;
                 if (sampleBits == 8) {
                     // 8-bit sample. Convert from U8 to S8, and then from S8 to F32.
                     for (int32 s = 0; s < length; ++s) {
+#if RETRO_PLATFORM == RETRO_WII
+                        int16 sample = (int16) ReadInt8(&info);
+                        *buffer++ = (int16) (sample << 8) - 32768;
+#else
                         int32 sample = ReadInt8(&info);
                         *buffer++    = (sample - 0x80) / (float)0x80;
+#endif
                     }
                 }
                 else {
@@ -391,12 +396,19 @@ void RSDK::LoadSfxToSlot(char *filename, uint8 slot, uint8 plays, uint8 scope)
                     for (int32 s = 0; s < length; ++s) {
                         // For some reason, the game performs sign-extension manually here.
                         // Note that this is different from the 8-bit format's unsigned-to-signed conversion.
+#if RETRO_PLATFORM == RETRO_WII
+                        int16 sample = ReadInt16(&info);
+                        if (sample > 0x7FFF)
+                            sample = (sample & 0x7FFF) - 0x8000;
+                        *buffer++ = (int16) (sample * 0.75);
+#else
                         int32 sample = (uint16)ReadInt16(&info);
 
                         if (sample > 0x7FFF)
                             sample = (sample & 0x7FFF) - 0x8000;
 
                         *buffer++ = (sample / (float)0x8000) * 0.75f;
+#endif
                     }
                 }
             }

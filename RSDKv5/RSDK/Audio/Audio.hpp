@@ -8,14 +8,18 @@ namespace RSDK
 #define CHANNEL_COUNT (0x10)
 
 #define MIX_BUFFER_SIZE (0x800)
+#if RETRO_PLATFORM == RETRO_WII // Wii uses s16 samples
+#define SAMPLE_FORMAT   int16
+#else
 #define SAMPLE_FORMAT   float
+#endif
 
 #define AUDIO_FREQUENCY (44100)
 #define AUDIO_CHANNELS  (2)
 
 struct SFXInfo {
     RETRO_HASH_MD5(hash);
-    float *buffer;
+    SAMPLE_FORMAT *buffer;
     size_t length;
     int32 playCount;
     uint8 maxConcurrentPlays;
@@ -23,7 +27,7 @@ struct SFXInfo {
 };
 
 struct ChannelInfo {
-    float *samplePtr;
+    SAMPLE_FORMAT *samplePtr;
     float pan;
     float volume;
     int32 speed;

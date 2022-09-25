@@ -164,6 +164,8 @@ bool RenderDevice::Init() {
     memset(screens[0].frameBuffer, 0, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
 
     InitInputDevices();
+    if (!AudioDevice::Init())
+        return false;
 
     return true;
 }
