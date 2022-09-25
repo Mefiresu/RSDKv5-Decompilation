@@ -20,6 +20,22 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
     this->stateStart  = (this->buttonMasks & WPAD_BUTTON_PLUS) != 0;
     this->stateSelect = (this->buttonMasks & WPAD_BUTTON_MINUS) != 0;
 
+    WPADData *data = WPAD_Data(0);
+    if (data && data->exp.type == WPAD_EXP_CLASSIC)
+    {
+        this->stateUp     |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_UP) != 0;
+        this->stateDown   |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_DOWN) != 0;
+        this->stateLeft   |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_LEFT) != 0;
+        this->stateRight  |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_RIGHT) != 0;
+        this->stateA      |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_B) != 0;
+        this->stateB      |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_A) != 0;
+        this->stateC      |= (this->buttonMasks & 0) != 0;
+        this->stateX      |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_Y) != 0;
+        this->stateY      |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_X) != 0;
+        this->stateZ      |= (this->buttonMasks & 0) != 0;
+        this->stateStart  |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_PLUS) != 0;
+        this->stateSelect |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_MINUS) != 0;	
+    }
     // Update both
     this->ProcessInput(CONT_ANY);
     this->ProcessInput(CONT_P1);
