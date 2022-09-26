@@ -35,6 +35,10 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
         this->stateZ      |= (this->buttonMasks & 0) != 0;
         this->stateStart  |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_PLUS) != 0;
         this->stateSelect |= (this->buttonMasks & WPAD_CLASSIC_BUTTON_MINUS) != 0;	
+        this->stateUp |= (data->exp.classic.ljs.pos.y > data->exp.classic.ljs.center.y + 5) ? 1 : 0;
+        this->stateDown |= (data->exp.classic.ljs.pos.y < data->exp.classic.ljs.center.y - 5) ? 1 : 0;
+        this->stateLeft |= (data->exp.classic.ljs.pos.x < data->exp.classic.ljs.center.x - 5) ? 1 : 0;
+        this->stateRight |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
     }
     // Update both
     this->ProcessInput(CONT_ANY);
