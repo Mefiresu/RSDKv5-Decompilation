@@ -6,6 +6,7 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
     WPAD_ScanPads();
 
     this->buttonMasks = WPAD_ButtonsHeld(0);
+    WPADData *data = WPAD_Data(0);
     int type = data->exp.type;
     switch (type) {
         case WPAD_EXP_NONE:
