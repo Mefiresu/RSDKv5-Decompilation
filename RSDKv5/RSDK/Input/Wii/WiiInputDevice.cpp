@@ -8,8 +8,9 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
     this->buttonMasks = WPAD_ButtonsHeld(0);
     WPADData *data = WPAD_Data(0);
     int type = data->exp.type;
-    switch (type) {
-        case WPAD_EXP_NONE:
+    switch (type) 
+    {
+        case WPAD_EXP_NONE: default:
             this->stateUp     = (this->buttonMasks & WPAD_BUTTON_RIGHT) != 0;
             this->stateDown   = (this->buttonMasks & WPAD_BUTTON_LEFT) != 0;
             this->stateLeft   = (this->buttonMasks & WPAD_BUTTON_UP) != 0;
@@ -58,8 +59,6 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateDown     |= (data->exp.classic.ljs.pos.y < data->exp.classic.ljs.center.y - 5) ? 1 : 0;
             this->stateLeft     |= (data->exp.classic.ljs.pos.x < data->exp.classic.ljs.center.x - 5) ? 1 : 0;
             this->stateRight    |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
-            break;
-        default:
             break;
     }
     // Update both
