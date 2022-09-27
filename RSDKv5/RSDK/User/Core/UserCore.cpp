@@ -614,7 +614,9 @@ void RSDK::SaveSettingsINI(bool32 writeToFile)
 #else
         WriteText(file, "language=%d\n", gameVerInfo.language);
 #endif
+#if RETRO_PLATFORM == RETRO_WII
 	WriteText(file, "faceButtonFlip=%s\n", (customSettings.confirmButtonFlip ? "y" : "n"));
+#endif
         // ================
         // VIDEO
         // ================
