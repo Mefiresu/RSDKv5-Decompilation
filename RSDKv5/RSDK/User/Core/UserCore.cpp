@@ -500,7 +500,11 @@ void RSDK::LoadSettingsINI()
 
 #if !RETRO_USE_ORIGINAL_CODE
         customSettings.region                    = -1;
+#if RETRO_PLATFORM = RETRO_WII
         customSettings.confirmButtonFlip         = true;
+#else
+        customSettings.confirmButtonFlip         = false;
+#endif
         customSettings.xyButtonFlip              = false;
         customSettings.enableControllerDebugging = false;
         customSettings.disableFocusPause         = false;
