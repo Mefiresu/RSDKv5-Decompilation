@@ -500,7 +500,7 @@ void RSDK::LoadSettingsINI()
 
 #if !RETRO_USE_ORIGINAL_CODE
         customSettings.region                    = -1;
-        customSettings.confirmButtonFlip         = false;
+        customSettings.confirmButtonFlip         = true;
         customSettings.xyButtonFlip              = false;
         customSettings.enableControllerDebugging = false;
         customSettings.disableFocusPause         = false;
@@ -614,7 +614,7 @@ void RSDK::SaveSettingsINI(bool32 writeToFile)
 #else
         WriteText(file, "language=%d\n", gameVerInfo.language);
 #endif
-
+	WriteText(file, "faceButtonFlip=%s\n", (customSettings.confirmButtonFlip ? "y" : "n"));
         // ================
         // VIDEO
         // ================
