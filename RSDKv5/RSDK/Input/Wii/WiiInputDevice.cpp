@@ -18,8 +18,8 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateA      = (this->buttonMasks & WPAD_BUTTON_1) != 0;
             this->stateB      = (this->buttonMasks & WPAD_BUTTON_2) != 0;
             this->stateC      = (this->buttonMasks & 0) != 0;
-            this->stateX      = (this->buttonMasks & WPAD_BUTTON_A) != 0;
-            this->stateY      = (this->buttonMasks & WPAD_BUTTON_B) != 0;
+            this->stateX      = (this->buttonMasks & WPAD_BUTTON_B) != 0;
+            this->stateY      = (this->buttonMasks & WPAD_BUTTON_A) != 0;
             this->stateZ      = (this->buttonMasks & 0) != 0;
             this->stateStart  = (this->buttonMasks & WPAD_BUTTON_PLUS) != 0;
             this->stateSelect = (this->buttonMasks & WPAD_BUTTON_MINUS) != 0;
@@ -37,10 +37,10 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateZ        = (this->buttonMasks & 0) != 0;
             this->stateStart    = (this->buttonMasks & WPAD_BUTTON_PLUS) != 0;
             this->stateSelect   = (this->buttonMasks & WPAD_BUTTON_MINUS) != 0;
-            this->stateUp       |= (data->exp.nunchuk.js.pos.y > data->exp.nunchuk.js.center.y + 5) ? 1 : 0;
-            this->stateDown     |= (data->exp.nunchuk.js.pos.y < data->exp.nunchuk.js.center.y - 5) ? 1 : 0;
-            this->stateLeft     |= (data->exp.nunchuk.js.pos.x < data->exp.nunchuk.js.center.x - 5) ? 1 : 0;
-            this->stateRight    |= (data->exp.nunchuk.js.pos.x > data->exp.nunchuk.js.center.x + 5) ? 1 : 0;
+            this->stateUp       |= (data->exp.nunchuk.js.pos.y > data->exp.nunchuk.js.center.y + 10) ? 1 : 0;
+            this->stateDown     |= (data->exp.nunchuk.js.pos.y < data->exp.nunchuk.js.center.y - 10) ? 1 : 0;
+            this->stateLeft     |= (data->exp.nunchuk.js.pos.x < data->exp.nunchuk.js.center.x - 10) ? 1 : 0;
+            this->stateRight    |= (data->exp.nunchuk.js.pos.x > data->exp.nunchuk.js.center.x + 10) ? 1 : 0;
             break;
         case WPAD_EXP_CLASSIC:
             this->stateUp       = (this->buttonMasks & WPAD_CLASSIC_BUTTON_UP) != 0;
