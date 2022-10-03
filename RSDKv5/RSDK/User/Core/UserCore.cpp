@@ -316,7 +316,11 @@ void RSDK::LoadSettingsINI()
         customSettings.region                    = iniparser_getint(ini, "Game:region", -1);
         // customSettings.confirmButtonFlip         = iniparser_getboolean(ini, "Game:confirmButtonFlip", false);
         // customSettings.xyButtonFlip              = iniparser_getboolean(ini, "Game:xyButtonFlip", false);
-        customSettings.confirmButtonFlip         = iniparser_getboolean(ini, "Game:faceButtonFlip", false);
+#if RETRO_PLATFORM == RETRO_WII
+        customSettings.confirmButtonFlip = true;
+#else
+        customSettings.confirmButtonFlip = iniparser_getboolean(ini, "Game:faceButtonFlip", false);
+#endif
         customSettings.xyButtonFlip              = customSettings.confirmButtonFlip;
         customSettings.enableControllerDebugging = iniparser_getboolean(ini, "Game:enableControllerDebugging", false);
         customSettings.disableFocusPause         = iniparser_getboolean(ini, "Game:disableFocusPause", false);
