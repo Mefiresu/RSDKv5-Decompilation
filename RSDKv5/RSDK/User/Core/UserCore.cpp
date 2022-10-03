@@ -317,7 +317,11 @@ void RSDK::LoadSettingsINI()
         customSettings.region                    = iniparser_getint(ini, "Game:region", -1);
         // customSettings.confirmButtonFlip        = iniparser_getboolean(ini, "Game:confirmButtonFlip", false);
         // customSettings.xyButtonFlip             = iniparser_getboolean(ini, "Game:xyButtonFlip", false);
-        customSettings.confirmButtonFlip         = iniparser_getboolean(ini, "Game:faceButtonFlip", false);
+#if RETRO_PLATFORM == RETRO_WII
+        customSettings.confirmButtonFlip = true;
+#else
+        customSettings.confirmButtonFlip = iniparser_getboolean(ini, "Game:faceButtonFlip", false);
+#endif
         customSettings.xyButtonFlip              = customSettings.confirmButtonFlip;
         customSettings.enableControllerDebugging = iniparser_getboolean(ini, "Game:enableControllerDebugging", false);
         customSettings.disableFocusPause         = iniparser_getboolean(ini, "Game:disableFocusPause", false);
@@ -508,7 +512,11 @@ void RSDK::LoadSettingsINI()
 
 #if !RETRO_USE_ORIGINAL_CODE
         customSettings.region                    = -1;
+#if RETRO_PLATFORM == RETRO_WII
+        customSettings.confirmButtonFlip         = true;
+#else
         customSettings.confirmButtonFlip         = false;
+#endif
         customSettings.xyButtonFlip              = false;
         customSettings.enableControllerDebugging = false;
         customSettings.disableFocusPause         = false;
@@ -626,7 +634,9 @@ void RSDK::SaveSettingsINI(bool32 writeToFile)
 #else
         WriteText(file, "language=%d\n", gameVerInfo.language);
 #endif
-
+#if RETRO_PLATFORM == RETRO_WII
+	WriteText(file, "faceButtonFlip=%s\n", (customSettings.confirmButtonFlip ? "y" : "n"));
+#endif
         // ================
         // VIDEO
         // ================
