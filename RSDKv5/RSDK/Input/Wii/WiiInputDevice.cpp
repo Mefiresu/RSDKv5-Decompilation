@@ -8,8 +8,7 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
     this->buttonMasks = WPAD_ButtonsHeld(0);
     WPADData *data = WPAD_Data(0);
     int type = data->exp.type;
-    switch (type) 
-    {
+    switch (type) {
         case WPAD_EXP_NONE: default:
             this->stateUp     = (this->buttonMasks & WPAD_BUTTON_RIGHT) != 0;
             this->stateDown   = (this->buttonMasks & WPAD_BUTTON_LEFT) != 0;
@@ -37,10 +36,10 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateZ        = (this->buttonMasks & 0) != 0;
             this->stateStart    = (this->buttonMasks & WPAD_BUTTON_PLUS) != 0;
             this->stateSelect   = (this->buttonMasks & WPAD_BUTTON_MINUS) != 0;
-            this->stateUp       |= (data->exp.nunchuk.js.pos.y > data->exp.nunchuk.js.center.y + 10) ? 1 : 0;
-            this->stateDown     |= (data->exp.nunchuk.js.pos.y < data->exp.nunchuk.js.center.y - 10) ? 1 : 0;
-            this->stateLeft     |= (data->exp.nunchuk.js.pos.x < data->exp.nunchuk.js.center.x - 10) ? 1 : 0;
-            this->stateRight    |= (data->exp.nunchuk.js.pos.x > data->exp.nunchuk.js.center.x + 10) ? 1 : 0;
+            this->stateUp       |= (data->exp.nunchuk.js.pos.y > data->exp.nunchuk.js.center.y + 15) ? 1 : 0;
+            this->stateDown     |= (data->exp.nunchuk.js.pos.y < data->exp.nunchuk.js.center.y - 15) ? 1 : 0;
+            this->stateLeft     |= (data->exp.nunchuk.js.pos.x < data->exp.nunchuk.js.center.x - 15) ? 1 : 0;
+            this->stateRight    |= (data->exp.nunchuk.js.pos.x > data->exp.nunchuk.js.center.x + 15) ? 1 : 0;
             break;
         case WPAD_EXP_CLASSIC:
             this->stateUp       = (this->buttonMasks & WPAD_CLASSIC_BUTTON_UP) != 0;
