@@ -5,61 +5,84 @@ using namespace RSDK;
 void RSDK::SKU::InputDeviceWii::UpdateInput() {
     WPAD_ScanPads();
 
-    this->buttonMasks = WPAD_ButtonsHeld(0);
+    this->buttonMasksWii = WPAD_ButtonsHeld(0);
     WPADData *data = WPAD_Data(0);
     int type = data->exp.type;
     switch (type) {
-        case WPAD_EXP_NONE: default:
-            this->stateUp     = (this->buttonMasks & WPAD_BUTTON_RIGHT) != 0;
-            this->stateDown   = (this->buttonMasks & WPAD_BUTTON_LEFT) != 0;
-            this->stateLeft   = (this->buttonMasks & WPAD_BUTTON_UP) != 0;
-            this->stateRight  = (this->buttonMasks & WPAD_BUTTON_DOWN) != 0;
-            this->stateA      = (this->buttonMasks & WPAD_BUTTON_1) != 0;
-            this->stateB      = (this->buttonMasks & WPAD_BUTTON_2) != 0;
-            this->stateC      = (this->buttonMasks & 0) != 0;
-            this->stateX      = (this->buttonMasks & WPAD_BUTTON_B) != 0;
-            this->stateY      = (this->buttonMasks & WPAD_BUTTON_A) != 0;
-            this->stateZ      = (this->buttonMasks & 0) != 0;
-            this->stateStart  = (this->buttonMasks & WPAD_BUTTON_PLUS) != 0;
-            this->stateSelect = (this->buttonMasks & WPAD_BUTTON_MINUS) != 0;
+        case WPAD_EXP_NONE:
+        default:
+            this->stateUp     = (this->buttonMasksWii & WPAD_BUTTON_RIGHT) != 0;
+            this->stateDown   = (this->buttonMasksWii & WPAD_BUTTON_LEFT) != 0;
+            this->stateLeft   = (this->buttonMasksWii & WPAD_BUTTON_UP) != 0;
+            this->stateRight  = (this->buttonMasksWii & WPAD_BUTTON_DOWN) != 0;
+            this->stateA      = (this->buttonMasksWii & WPAD_BUTTON_1) != 0;
+            this->stateB      = (this->buttonMasksWii & WPAD_BUTTON_2) != 0;
+            this->stateC      = (this->buttonMasksWii & 0) != 0;
+            this->stateX      = (this->buttonMasksWii & WPAD_BUTTON_B) != 0;
+            this->stateY      = (this->buttonMasksWii & WPAD_BUTTON_A) != 0;
+            this->stateZ      = (this->buttonMasksWii & 0) != 0;
+            this->stateStart  = (this->buttonMasksWii & WPAD_BUTTON_PLUS) != 0;
+            this->stateSelect = (this->buttonMasksWii & WPAD_BUTTON_MINUS) != 0;
             break;
         case WPAD_EXP_NUNCHUK:
-            this->stateUp       = (this->buttonMasks & WPAD_BUTTON_UP) != 0;
-            this->stateDown     = (this->buttonMasks & WPAD_BUTTON_DOWN) != 0;
-            this->stateLeft     = (this->buttonMasks & WPAD_BUTTON_LEFT) != 0;
-            this->stateRight    = (this->buttonMasks & WPAD_BUTTON_RIGHT) != 0;
-            this->stateA        = (this->buttonMasks & WPAD_BUTTON_B) != 0;
-            this->stateB        = (this->buttonMasks & WPAD_BUTTON_A) != 0;
-            this->stateC        = (this->buttonMasks & 0) != 0;
-            this->stateX        = (this->buttonMasks & WPAD_NUNCHUK_BUTTON_C) != 0;
-            this->stateY        = (this->buttonMasks & WPAD_NUNCHUK_BUTTON_Z) != 0;
-            this->stateZ        = (this->buttonMasks & 0) != 0;
-            this->stateStart    = (this->buttonMasks & WPAD_BUTTON_PLUS) != 0;
-            this->stateSelect   = (this->buttonMasks & WPAD_BUTTON_MINUS) != 0;
-            this->stateUp       |= (data->exp.nunchuk.js.pos.y > data->exp.nunchuk.js.center.y + 15) ? 1 : 0;
-            this->stateDown     |= (data->exp.nunchuk.js.pos.y < data->exp.nunchuk.js.center.y - 15) ? 1 : 0;
-            this->stateLeft     |= (data->exp.nunchuk.js.pos.x < data->exp.nunchuk.js.center.x - 15) ? 1 : 0;
-            this->stateRight    |= (data->exp.nunchuk.js.pos.x > data->exp.nunchuk.js.center.x + 15) ? 1 : 0;
+            this->stateUp     = (this->buttonMasksWii & WPAD_BUTTON_UP) != 0;
+            this->stateDown   = (this->buttonMasksWii & WPAD_BUTTON_DOWN) != 0;
+            this->stateLeft   = (this->buttonMasksWii & WPAD_BUTTON_LEFT) != 0;
+            this->stateRight  = (this->buttonMasksWii & WPAD_BUTTON_RIGHT) != 0;
+            this->stateA      = (this->buttonMasksWii & WPAD_BUTTON_B) != 0;
+            this->stateB      = (this->buttonMasksWii & WPAD_BUTTON_A) != 0;
+            this->stateC      = (this->buttonMasksWii & 0) != 0;
+            this->stateX      = (this->buttonMasksWii & WPAD_NUNCHUK_BUTTON_C) != 0;
+            this->stateY      = (this->buttonMasksWii & WPAD_NUNCHUK_BUTTON_Z) != 0;
+            this->stateZ      = (this->buttonMasksWii & 0) != 0;
+            this->stateStart  = (this->buttonMasksWii & WPAD_BUTTON_PLUS) != 0;
+            this->stateSelect = (this->buttonMasksWii & WPAD_BUTTON_MINUS) != 0;
+            this->stateUp |= (data->exp.nunchuk.js.pos.y > data->exp.nunchuk.js.center.y + 10) ? 1 : 0;
+            this->stateDown |= (data->exp.nunchuk.js.pos.y < data->exp.nunchuk.js.center.y - 10) ? 1 : 0;
+            this->stateLeft |= (data->exp.nunchuk.js.pos.x < data->exp.nunchuk.js.center.x - 10) ? 1 : 0;
+            this->stateRight |= (data->exp.nunchuk.js.pos.x > data->exp.nunchuk.js.center.x + 10) ? 1 : 0;
             break;
         case WPAD_EXP_CLASSIC:
-            this->stateUp       = (this->buttonMasks & WPAD_CLASSIC_BUTTON_UP) != 0;
-            this->stateDown     = (this->buttonMasks & WPAD_CLASSIC_BUTTON_DOWN) != 0;
-            this->stateLeft     = (this->buttonMasks & WPAD_CLASSIC_BUTTON_LEFT) != 0;
-            this->stateRight    = (this->buttonMasks & WPAD_CLASSIC_BUTTON_RIGHT) != 0;
-            this->stateA        = (this->buttonMasks & WPAD_CLASSIC_BUTTON_B) != 0;
-            this->stateB        = (this->buttonMasks & WPAD_CLASSIC_BUTTON_A) != 0;
-            this->stateC        = (this->buttonMasks & 0) != 0;
-            this->stateX        = (this->buttonMasks & WPAD_CLASSIC_BUTTON_Y) != 0;
-            this->stateY        = (this->buttonMasks & WPAD_CLASSIC_BUTTON_X) != 0;
-            this->stateZ        = (this->buttonMasks & 0) != 0;
-            this->stateStart    = (this->buttonMasks & WPAD_CLASSIC_BUTTON_PLUS) != 0;
-            this->stateSelect   = (this->buttonMasks & WPAD_CLASSIC_BUTTON_MINUS) != 0;
-            this->stateUp       |= (data->exp.classic.ljs.pos.y > data->exp.classic.ljs.center.y + 5) ? 1 : 0;
-            this->stateDown     |= (data->exp.classic.ljs.pos.y < data->exp.classic.ljs.center.y - 5) ? 1 : 0;
-            this->stateLeft     |= (data->exp.classic.ljs.pos.x < data->exp.classic.ljs.center.x - 5) ? 1 : 0;
-            this->stateRight    |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
+            this->stateUp     = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_UP) != 0;
+            this->stateDown   = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_DOWN) != 0;
+            this->stateLeft   = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_LEFT) != 0;
+            this->stateRight  = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_RIGHT) != 0;
+            this->stateA      = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_B) != 0;
+            this->stateB      = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_A) != 0;
+            this->stateC      = (this->buttonMasksWii & 0) != 0;
+            this->stateX      = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_Y) != 0;
+            this->stateY      = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_X) != 0;
+            this->stateZ      = (this->buttonMasksWii & 0) != 0;
+            this->stateStart  = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_PLUS) != 0;
+            this->stateSelect = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_MINUS) != 0;
+            this->stateUp |= (data->exp.classic.ljs.pos.y > data->exp.classic.ljs.center.y + 5) ? 1 : 0;
+            this->stateDown |= (data->exp.classic.ljs.pos.y < data->exp.classic.ljs.center.y - 5) ? 1 : 0;
+            this->stateLeft |= (data->exp.classic.ljs.pos.x < data->exp.classic.ljs.center.x - 5) ? 1 : 0;
+            this->stateRight |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
             break;
     }
+    if(PAD_ScanPads() > 0)
+    {
+        this->buttonMasksGC = PAD_ButtonsHeld(0);
+        
+        this->stateUp     = (this->buttonMasksGC & PAD_BUTTON_UP) != 0;
+        this->stateDown   = (this->buttonMasksGC & PAD_BUTTON_DOWN) != 0;
+        this->stateLeft   = (this->buttonMasksGC & PAD_BUTTON_LEFT) != 0;
+        this->stateRight  = (this->buttonMasksGC & PAD_BUTTON_RIGHT) != 0;
+        this->stateA      = (this->buttonMasksGC & PAD_BUTTON_B) != 0;
+        this->stateB      = (this->buttonMasksGC & PAD_BUTTON_A) != 0;
+        this->stateC      = (this->buttonMasksGC & 0) != 0;
+        this->stateX      = (this->buttonMasksGC & PAD_BUTTON_Y) != 0;
+        this->stateY      = (this->buttonMasksGC & PAD_BUTTON_X) != 0;
+        this->stateZ      = (this->buttonMasksGC & 0) != 0;
+        this->stateStart  = (this->buttonMasksGC & PAD_BUTTON_START) != 0;
+        this->stateSelect = (this->buttonMasksGC & PAD_TRIGGER_Z) != 0;
+        this->stateUp |= (PAD_StickY(0) > 10) ? 1 : 0;
+        this->stateDown |= (PAD_StickY(0) < -10) ? 1 : 0;
+        this->stateLeft |= (PAD_StickX(0) < -10) ? 1 : 0;
+        this->stateRight |= (PAD_StickX(0) > 10) ? 1 : 0;
+    }
+
     // Update both
     this->ProcessInput(CONT_ANY);
     this->ProcessInput(CONT_P1);
@@ -120,5 +143,6 @@ RSDK::SKU::InputDeviceWii *RSDK::SKU::InitWiiInputDevice(uint32 id) {
 
 void RSDK::SKU::InitWiiInputAPI() {
     WPAD_Init();
+    PAD_Init();
     SKU::InitWiiInputDevice(CONT_P1);
 }
