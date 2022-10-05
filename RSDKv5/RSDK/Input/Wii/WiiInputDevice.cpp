@@ -3,7 +3,7 @@
 using namespace RSDK;
 
 void RSDK::SKU::InputDeviceWii::UpdateInput() {
-    WPAD_ScanPads();
+    s32 WiiPads = WPAD_ScanPads();
 
     this->buttonMasksWii = WPAD_ButtonsHeld(0);
     WPADData *data = WPAD_Data(0);
@@ -61,7 +61,7 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateRight  |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
             break;
     }
-    if(PAD_ScanPads() > 0) //checks if a gamecube controller is plugged into the wii
+    if (PAD_ScanPads() > 0 && WiiPads < 1) // checks if a gamecube controller is plugged into the wii and if there is no wiimote connected
     {
         this->buttonMasksGC = PAD_ButtonsHeld(0);
         
