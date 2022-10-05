@@ -8,8 +8,6 @@ struct InputDeviceWii : InputDevice {
 
     uint32 buttonMasksWii;
     uint16 buttonMasksGC;
-    uint32 prevButtonMasksWii;
-    uint16 prevButtonMasksGC;
     uint8 stateUp;
     uint8 stateDown;
     uint8 stateLeft;

@@ -268,7 +268,8 @@ void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yP
 bool RenderDevice::ProcessEvents() {
     // Close when pressing home
     // FIXME: Maybe this should go in WiiInputDevice, but stopping the engine here makes more sense
-    if (WPAD_ButtonsHeld(0) & (WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME) || PAD_ButtonsHeld(0) & PAD_BUTTON_START) {
+    if (WPAD_ButtonsHeld(0) & (WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME)
+        || (PAD_ButtonsHeld(0) & PAD_BUTTON_START && PAD_ButtonsHeld(0) & PAD_TRIGGER_L && PAD_ButtonsHeld(0) & PAD_TRIGGER_R)) {
         isRunning = false;
     }
 
