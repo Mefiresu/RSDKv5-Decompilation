@@ -61,7 +61,7 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateRight  |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
             break;
     }
-    if(PAD_ScanPads() > 0)
+    if(PAD_ScanPads() > 0) //checks if a gamecube controller is plugged into the wii
     {
         this->buttonMasksGC = PAD_ButtonsHeld(0);
         
