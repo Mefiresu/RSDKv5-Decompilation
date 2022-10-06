@@ -61,22 +61,22 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateRight  |= (data->exp.classic.ljs.pos.x > data->exp.classic.ljs.center.x + 5) ? 1 : 0;
             break;
     }
-    if (PAD_ScanPads() > 0 && WiiPads < 1) // checks if a gamecube controller is plugged into the wii and if there is no wiimote connected
+    if (PAD_ScanPads() > 0) // checks if a gamecube controller is plugged into the wii
     {
         this->buttonMasksGC = PAD_ButtonsHeld(0);
         
-        this->stateUp     = (this->buttonMasksGC & PAD_BUTTON_UP) != 0;
-        this->stateDown   = (this->buttonMasksGC & PAD_BUTTON_DOWN) != 0;
-        this->stateLeft   = (this->buttonMasksGC & PAD_BUTTON_LEFT) != 0;
-        this->stateRight  = (this->buttonMasksGC & PAD_BUTTON_RIGHT) != 0;
-        this->stateA      = (this->buttonMasksGC & PAD_BUTTON_B) != 0;
-        this->stateB      = (this->buttonMasksGC & PAD_BUTTON_A) != 0;
-        this->stateC      = (this->buttonMasksGC & 0) != 0;
-        this->stateX      = (this->buttonMasksGC & PAD_BUTTON_Y) != 0;
-        this->stateY      = (this->buttonMasksGC & PAD_BUTTON_X) != 0;
-        this->stateZ      = (this->buttonMasksGC & 0) != 0;
-        this->stateStart  = (this->buttonMasksGC & PAD_BUTTON_START) != 0;
-        this->stateSelect = (this->buttonMasksGC & PAD_TRIGGER_Z) != 0;
+        this->stateUp     |= (this->buttonMasksGC & PAD_BUTTON_UP) != 0;
+        this->stateDown   |= (this->buttonMasksGC & PAD_BUTTON_DOWN) != 0;
+        this->stateLeft   |= (this->buttonMasksGC & PAD_BUTTON_LEFT) != 0;
+        this->stateRight  |= (this->buttonMasksGC & PAD_BUTTON_RIGHT) != 0;
+        this->stateA      |= (this->buttonMasksGC & PAD_BUTTON_B) != 0;
+        this->stateB      |= (this->buttonMasksGC & PAD_BUTTON_A) != 0;
+        this->stateC      |= (this->buttonMasksGC & 0) != 0;
+        this->stateX      |= (this->buttonMasksGC & PAD_BUTTON_Y) != 0;
+        this->stateY      |= (this->buttonMasksGC & PAD_BUTTON_X) != 0;
+        this->stateZ      |= (this->buttonMasksGC & 0) != 0;
+        this->stateStart  |= (this->buttonMasksGC & PAD_BUTTON_START) != 0;
+        this->stateSelect |= (this->buttonMasksGC & PAD_TRIGGER_Z) != 0;
         this->stateUp     |= (PAD_StickY(0) > 10) ? 1 : 0;
         this->stateDown   |= (PAD_StickY(0) < -10) ? 1 : 0;
         this->stateLeft   |= (PAD_StickX(0) < -10) ? 1 : 0;
