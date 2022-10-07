@@ -2,8 +2,7 @@
 #include <malloc.h>
 #include <wiiuse/wpad.h>
 
-#define DEFAULT_FIFO_SIZE 256 * 1024
-static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
+static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = {0};
 
 static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 static int fb = 0; // Current external framebuffer
@@ -27,11 +26,11 @@ static s16 square[] ATTRIBUTE_ALIGN (32) =
 };
 
 static inline void
-draw_vert (u8 pos, u8 c, f32 s, f32 t)
+draw_vert (u8 pos, f32 s, f32 t)
 {
     f32 scaleFactor = (float) (viewWidth/2) / (float) actualWidth;
     GX_Position1x8 (pos);
-    GX_Color1x8 (c);
+    GX_Color1u32 (0xffffffff);
     GX_TexCoord2f32 (s * scaleFactor, t);
 }
 
@@ -43,10 +42,10 @@ draw_square ()
     guMtxIdentity (mv);
     GX_LoadPosMtxImm (mv, GX_PNMTX0);
     GX_Begin (GX_QUADS, GX_VTXFMT0, 4);
-    draw_vert (0, 0, 0.0, 0.0);
-    draw_vert (1, 0, 1.0, 0.0);
-    draw_vert (2, 0, 1.0, 1.0);
-    draw_vert (3, 0, 0.0, 1.0);
+    draw_vert (0, 0.0, 0.0);
+    draw_vert (1, 1.0, 0.0);
+    draw_vert (2, 1.0, 1.0);
+    draw_vert (3, 0.0, 1.0);
     GX_End ();
 }
 
@@ -81,11 +80,8 @@ bool RenderDevice::Init() {
     CON_Init(xfb[0], 20, 20, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
     CON_Init(xfb[1], 20, 20, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
 
-    /*** Clear out FIFO area ***/
-    memset (gp_fifo, 0, DEFAULT_FIFO_SIZE);
-
     /*** Initialise GX ***/
-    GX_Init (gp_fifo, DEFAULT_FIFO_SIZE);
+    GX_Init (gp_fifo, sizeof(gp_fifo));
 
     GXColor background = { 0, 0, 0, 0xff };
     GX_SetCopyClear (background, 0x00ffffff);
@@ -128,17 +124,17 @@ bool RenderDevice::Init() {
 
     GX_ClearVtxDesc ();
     GX_SetVtxDesc (GX_VA_POS, GX_INDEX8);
-    GX_SetVtxDesc (GX_VA_CLR0, GX_INDEX8);
+    GX_SetVtxDesc (GX_VA_CLR0, GX_DIRECT);
     GX_SetVtxDesc (GX_VA_TEX0, GX_DIRECT);
 
     GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_U8, 0);
+    GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
     GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
     GX_SetArray (GX_VA_POS, square, 3 * sizeof (s16));
 
     GX_SetNumTexGens (1);
-    GX_SetNumChans (0);
+    GX_SetNumChans (1);
 
     GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
