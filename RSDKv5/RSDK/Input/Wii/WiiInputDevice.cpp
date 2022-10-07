@@ -1,5 +1,7 @@
 #include <wiiuse/wpad.h>
 
+#define JSMAXGC 101.0f //maximum left joystick value for gamecube controller
+
 using namespace RSDK;
 
 void RSDK::SKU::InputDeviceWii::UpdateInput() {
@@ -37,8 +39,8 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateZ      = (this->buttonMasksWii & 0) != 0;
             this->stateStart  = (this->buttonMasksWii & WPAD_BUTTON_PLUS) != 0;
             this->stateSelect = (this->buttonMasksWii & WPAD_BUTTON_MINUS) != 0;
-            this->vDelta_L    = (float)(data->exp.nunchuk.js.pos.y - data->exp.nunchuk.js.center.y) / (data->exp.nunchuk.js.max.y / 2);
-            this->hDelta_L    = (float)(data->exp.nunchuk.js.pos.x - data->exp.nunchuk.js.center.x) / (data->exp.nunchuk.js.max.x / 2);
+            this->vDelta_L    = (float)(data->exp.nunchuk.js.pos.y - data->exp.nunchuk.js.center.y) / ((float)data->exp.nunchuk.js.max.y / 2.0f);
+            this->hDelta_L    = (float)(data->exp.nunchuk.js.pos.x - data->exp.nunchuk.js.center.x) / ((float)data->exp.nunchuk.js.max.x / 2.0f);
             break;
         case WPAD_EXP_CLASSIC:
             this->stateUp     = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_UP) != 0;
@@ -53,8 +55,8 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateZ      = (this->buttonMasksWii & 0) != 0;
             this->stateStart  = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_PLUS) != 0;
             this->stateSelect = (this->buttonMasksWii & WPAD_CLASSIC_BUTTON_MINUS) != 0;
-            this->vDelta_L    = (float)(data->exp.classic.ljs.pos.y - data->exp.classic.ljs.center.y) / (data->exp.classic.ljs.max.y / 2);
-            this->hDelta_L    = (float)(data->exp.classic.ljs.pos.x - data->exp.classic.ljs.center.x) / (data->exp.classic.ljs.max.x / 2);
+            this->vDelta_L    = (float)(data->exp.classic.ljs.pos.y - data->exp.classic.ljs.center.y) / ((float)data->exp.classic.ljs.max.y / 2.0f);
+            this->hDelta_L    = (float)(data->exp.classic.ljs.pos.x - data->exp.classic.ljs.center.x) / ((float)data->exp.classic.ljs.max.x / 2.0f);
             break;
     }
     if (PAD_ScanPads() > 0) // checks if a gamecube controller is plugged into the wii
@@ -73,8 +75,8 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
         this->stateZ      |= (this->buttonMasksGC & 0) != 0;
         this->stateStart  |= (this->buttonMasksGC & PAD_BUTTON_START) != 0;
         this->stateSelect |= (this->buttonMasksGC & PAD_TRIGGER_Z) != 0;
-        this->vDelta_L = (float)PAD_StickY(0) / (101 / 2);
-        this->hDelta_L = (float)PAD_StickX(0) / (101 / 2);
+        this->vDelta_L = (float)PAD_StickY(0) / (JSMAXGC / 2.0f);
+        this->hDelta_L = (float)PAD_StickX(0) / (JSMAXGC / 2.0f);
     }
 
     // Update both
