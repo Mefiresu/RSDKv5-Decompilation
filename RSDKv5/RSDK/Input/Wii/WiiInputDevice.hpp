@@ -6,8 +6,8 @@ struct InputDeviceWii : InputDevice {
     void ProcessInput(int32 controllerID);
     void CloseDevice();
 
-    uint32 buttonMasks;
-    uint32 prevButtonMasks;
+    uint32 buttonMasksWii;
+    uint16 buttonMasksGC;
     uint8 stateUp;
     uint8 stateDown;
     uint8 stateLeft;
@@ -20,6 +20,8 @@ struct InputDeviceWii : InputDevice {
     uint8 stateZ;
     uint8 stateStart;
     uint8 stateSelect;
+    float hDelta_L;
+    float vDelta_L;
 };
 
 void InitWiiInputAPI();
