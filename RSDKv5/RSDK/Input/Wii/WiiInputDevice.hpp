@@ -20,6 +20,8 @@ struct InputDeviceWii : InputDevice {
     uint8 stateZ;
     uint8 stateStart;
     uint8 stateSelect;
+    float hDelta_L;
+    float vDelta_L;
 };
 
 void InitWiiInputAPI();
