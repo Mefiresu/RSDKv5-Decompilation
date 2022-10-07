@@ -5,7 +5,7 @@
 using namespace RSDK;
 
 void RSDK::SKU::InputDeviceWii::UpdateInput() {
-    s32 WiiPads = WPAD_ScanPads();
+    WPAD_ScanPads();
 
     this->buttonMasksWii = WPAD_ButtonsHeld(0);
     WPADData *data = WPAD_Data(0);
@@ -25,6 +25,9 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->stateZ      = (this->buttonMasksWii & 0) != 0;
             this->stateStart  = (this->buttonMasksWii & WPAD_BUTTON_PLUS) != 0;
             this->stateSelect = (this->buttonMasksWii & WPAD_BUTTON_MINUS) != 0;
+            // Reset analog input to prevent it from triggering a movement
+            this->vDelta_L    = 0.0f;
+            this->hDelta_L    = 0.0f;
             break;
         case WPAD_EXP_NUNCHUK:
             this->stateUp     = (this->buttonMasksWii & WPAD_BUTTON_UP) != 0;
@@ -59,10 +62,10 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
             this->hDelta_L    = (float)(data->exp.classic.ljs.pos.x - data->exp.classic.ljs.center.x) / ((float)data->exp.classic.ljs.max.x / 2.0f);
             break;
     }
-    if (PAD_ScanPads() > 0) // checks if a gamecube controller is plugged into the wii
-    {
+    // checks if a gamecube controller is plugged into the wii
+    if (PAD_ScanPads() > 0) {
         this->buttonMasksGC = PAD_ButtonsHeld(0);
-        
+
         this->stateUp     |= (this->buttonMasksGC & PAD_BUTTON_UP) != 0;
         this->stateDown   |= (this->buttonMasksGC & PAD_BUTTON_DOWN) != 0;
         this->stateLeft   |= (this->buttonMasksGC & PAD_BUTTON_LEFT) != 0;
