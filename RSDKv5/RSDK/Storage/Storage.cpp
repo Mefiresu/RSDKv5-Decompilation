@@ -32,7 +32,7 @@ bool32 RSDK::InitStorage()
     // Lowered as much as possible, by smb123w64gb (https://github.com/smb123w64gb/RSDKv5-Decompilation/commit/b9f325fe8595e8a3cd84b00a8a1214361d2ffc45)
     dataStorage[DATASET_STG].storageLimit = 0x1032900; // 16.19751 Mib
     dataStorage[DATASET_MUS].storageLimit = 0x42ff00;  // 4.187256 Mib
-    dataStorage[DATASET_SFX].storageLimit = 0x1400000; // 20 Mib
+    dataStorage[DATASET_SFX].storageLimit = 0xa00000; // 10 Mib
     dataStorage[DATASET_STR].storageLimit = 1 * 0xf000;  // 0.058594 Mib
     dataStorage[DATASET_TMP].storageLimit = 1 * 0x600000;  // 6 Mib
 
