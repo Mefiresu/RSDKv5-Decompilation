@@ -33,7 +33,7 @@ bool32 RSDK::InitStorage()
     dataStorage[DATASET_STG].storageLimit = 0x1032900; // 16.19751 Mib
     dataStorage[DATASET_MUS].storageLimit = 0x42ff00;  // 4.187256 Mib
     dataStorage[DATASET_SFX].storageLimit = 0xa00000; // 10 Mib
-    dataStorage[DATASET_STR].storageLimit = 1 * 0xf000;  // 0.058594 Mib
+    dataStorage[DATASET_STR].storageLimit = 0x16000;  // 0.0859375 Mib
     dataStorage[DATASET_TMP].storageLimit = 1 * 0x600000;  // 6 Mib
 
     for (int32 s = 0; s < DATASET_MAX; ++s) {
