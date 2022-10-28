@@ -59,6 +59,13 @@ bool RenderDevice::Init() {
     } else { // 4:3
         viewWidth = 640;
     }
+    if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
+        vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
+        vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
+    } else {
+        vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
+        vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
+    }
 
     // Set up the video system with the chosen mode
     VIDEO_Configure(vmode);
