@@ -6,7 +6,10 @@
 
 #define STB_VORBIS_NO_PUSHDATA_API
 #define STB_VORBIS_NO_STDIO
-#if RETRO_PLATFORM != RETRO_WII // Wii needs s16 conversion from stb_vorbis
+#if RETRO_PLATFORM == RETRO_WII // Wii needs s16 conversion from stb_vorbis
+// Helper to add two s16 samples and clamp back to s16
+#define ADD_CLAMP_S16(x,y) CLAMP((int32)x + (int32)y, -0x7FFF, 0x7FFF)
+#else
 #define STB_VORBIS_NO_INTEGER_CONVERSION
 #endif
 #include "stb_vorbis/stb_vorbis.c"
@@ -92,8 +95,13 @@ void AudioDeviceBase::ProcessAudioMixing(void *stream, int32 length)
                     channel->bufferPos += FROM_FIXED(speedPercent);
                     speedPercent %= TO_FIXED(1);
 
+#if RETRO_PLATFORM == RETRO_WII
+                    curStreamF[0] = ADD_CLAMP_S16(curStreamF[0], sample * panL);
+                    curStreamF[1] = ADD_CLAMP_S16(curStreamF[1], sample * panR);
+#else
                     curStreamF[0] += sample * panL;
                     curStreamF[1] += sample * panR;
+#endif
                     curStreamF += 2;
 
                     if (channel->bufferPos >= channel->sampleLength) {
@@ -133,8 +141,13 @@ void AudioDeviceBase::ProcessAudioMixing(void *stream, int32 length)
                     int32 next = FROM_FIXED(speedPercent);
                     speedPercent %= TO_FIXED(1);
 
+#if RETRO_PLATFORM == RETRO_WII
+                    curStreamF[0] = ADD_CLAMP_S16(curStreamF[0], streamBuffer[0] * panL);
+                    curStreamF[1] = ADD_CLAMP_S16(curStreamF[1], streamBuffer[1] * panR);
+#else
                     curStreamF[0] += streamBuffer[0] * panL;
                     curStreamF[1] += streamBuffer[1] * panR;
+#endif
                     curStreamF += 2;
 
                     streamBuffer += next * 2;
