@@ -1,3 +1,4 @@
+#include "RSDK/Core/RetroEngine.hpp"
 #include <gccore.h>
 #include <malloc.h>
 #include <wiiuse/wpad.h>
@@ -50,21 +51,28 @@ draw_square() {
 bool RenderDevice::Init() {
     // Initialize the video system
     VIDEO_Init();
-    vmode = VIDEO_GetPreferredMode(NULL);
 
-    // Check for aspect ratio
-    if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
-        vmode->viWidth = 672;
-        viewWidth = 848;
-    } else { // 4:3
-        viewWidth = 640;
+    if(!videoSettings.runIn240p) {
+        vmode = VIDEO_GetPreferredMode(NULL);
+
+        // Check for aspect ratio
+        if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
+            vmode->viWidth = 672;
+            viewWidth = 848;
+        } else { // 4:3
+            viewWidth = 640;
+        }
+        if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
+            vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
+            vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
+        } else {
+            vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
+            vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
+        }
     }
-    if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
-        vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
-        vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
-    } else {
-        vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
-        vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
+    else {
+        vmode = &TVMpal240Ds;
+        viewWidth = 640;
     }
 
     // Set up the video system with the chosen mode
