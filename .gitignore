@@ -246,3 +246,5 @@ Ignored/
 android/local.properties
 
 *.res
+
+.map
