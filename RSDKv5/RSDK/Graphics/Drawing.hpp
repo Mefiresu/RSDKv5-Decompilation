@@ -156,9 +156,6 @@ enum VideoSettingsValues {
     VIDEOSETTING_RELOAD,
     VIDEOSETTING_CHANGED,
     VIDEOSETTING_WRITE,
-#if RETRO_PLATFORM == RETRO_WII
-    VIDEOSETTING_RUNIN240P,
-#endif
 };
 
 struct float4 {
