@@ -442,9 +442,6 @@ int32 RSDK::GetVideoSetting(int32 id)
             return gameVerInfo.language;
 #endif
         case VIDEOSETTING_CHANGED: return changedVideoSettings;
-#if RETRO_PLATFORM == RETRO_WII
-        case VIDEOSETTING_RUNIN240P: return videoSettings.runIn240p;
-#endif
 
         default: break;
     }
@@ -456,15 +453,6 @@ void RSDK::SetVideoSetting(int32 id, int32 value)
 {
     bool32 boolVal = value;
     switch (id) {
-#if RETRO_PLATFORM == RETRO_WII
-        case VIDEOSETTING_RUNIN240P:
-            if (videoSettings.runIn240p != boolVal) {
-                videoSettings.runIn240p = boolVal;
-                changedVideoSettings    = true;
-            }
-            break;
-#endif
-
         case VIDEOSETTING_WINDOWED:
             if (videoSettings.windowed != boolVal) {
                 videoSettings.windowed = boolVal;
