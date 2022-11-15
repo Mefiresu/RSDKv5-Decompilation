@@ -71,7 +71,7 @@ bool RenderDevice::Init() {
         }
     }
     else {
-        vmode = &TVMpal240Ds;
+        vmode = &TVNtsc240Ds;
         viewWidth = 640;
     }
 
