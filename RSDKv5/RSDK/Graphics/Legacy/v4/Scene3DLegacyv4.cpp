@@ -1,9 +1,10 @@
-
+#if RETRO_PLATFORM != RETRO_WII
 RSDK::Legacy::Face RSDK::Legacy::v4::faceBuffer[LEGACY_v4_FACEBUFFER_SIZE];
 RSDK::Legacy::Vertex RSDK::Legacy::v4::vertexBuffer[LEGACY_v4_VERTEXBUFFER_SIZE];
 RSDK::Legacy::Vertex RSDK::Legacy::v4::vertexBufferT[LEGACY_v4_VERTEXBUFFER_SIZE];
 
 RSDK::Legacy::DrawListEntry3D RSDK::Legacy::v4::drawList3D[LEGACY_v4_FACEBUFFER_SIZE];
+#endif
 
 int32 RSDK::Legacy::v4::fogColor    = 0;
 int32 RSDK::Legacy::v4::fogStrength = 0;

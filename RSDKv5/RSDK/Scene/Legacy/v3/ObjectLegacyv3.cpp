@@ -1,9 +1,11 @@
 
 int32 RSDK::Legacy::v3::objectLoop    = 0;
 int32 RSDK::Legacy::v3::curObjectType = 0;
+#if RETRO_PLATFORM != RETRO_WII
 RSDK::Legacy::v3::Entity RSDK::Legacy::v3::objectEntityList[LEGACY_v3_ENTITY_COUNT];
 
 char RSDK::Legacy::v3::typeNames[LEGACY_v3_OBJECT_COUNT][0x40];
+#endif
 
 void RSDK::Legacy::v3::SetObjectTypeName(const char *objectName, int32 objectID)
 {

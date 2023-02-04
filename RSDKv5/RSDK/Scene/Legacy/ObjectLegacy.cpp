@@ -1,3 +1,6 @@
+#if RETRO_PLATFORM == RETRO_WII
+#include "CommonLegacy.hpp"
+#endif
 #include "v3/ObjectLegacyv3.cpp"
 #include "v3/PlayerLegacyv3.cpp"
 #include "v3/ScriptLegacyv3.cpp"

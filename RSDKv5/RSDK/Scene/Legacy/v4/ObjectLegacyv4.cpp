@@ -2,13 +2,17 @@
 // Game Objects
 int32 RSDK::Legacy::v4::objectEntityPos = 0;
 int32 RSDK::Legacy::v4::curObjectType   = 0;
+#if RETRO_PLATFORM != RETRO_WII
 RSDK::Legacy::v4::Entity RSDK::Legacy::v4::objectEntityList[LEGACY_v4_ENTITY_COUNT * 2]; //"regular" list & "storage" list
+#endif
 int32 RSDK::Legacy::v4::processObjectFlag[LEGACY_v4_ENTITY_COUNT];
 RSDK::Legacy::v4::TypeGroupList RSDK::Legacy::v4::objectTypeGroupList[LEGACY_v4_TYPEGROUP_COUNT];
 
 int32 RSDK::Legacy::v4::playerListPos = 0;
 
+#if RETRO_PLATFORM != RETRO_WII
 char RSDK::Legacy::v4::typeNames[LEGACY_v4_OBJECT_COUNT][0x40];
+#endif
 
 void RSDK::Legacy::v4::ProcessStartupObjects()
 {
