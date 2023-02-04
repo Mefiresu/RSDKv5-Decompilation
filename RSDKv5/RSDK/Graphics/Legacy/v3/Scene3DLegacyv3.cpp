@@ -1,9 +1,10 @@
-
+#if RETRO_PLATFORM != RETRO_WII
 RSDK::Legacy::Face RSDK::Legacy::v3::faceBuffer[LEGACY_v3_FACEBUFFER_SIZE];
 RSDK::Legacy::Vertex RSDK::Legacy::v3::vertexBuffer[LEGACY_v3_VERTEXBUFFER_SIZE];
 RSDK::Legacy::Vertex RSDK::Legacy::v3::vertexBufferT[LEGACY_v3_VERTEXBUFFER_SIZE];
 
 RSDK::Legacy::DrawListEntry3D RSDK::Legacy::v3::drawList3D[LEGACY_v3_FACEBUFFER_SIZE];
+#endif
 
 void RSDK::Legacy::v3::SetIdentityMatrix(Matrix *matrix)
 {

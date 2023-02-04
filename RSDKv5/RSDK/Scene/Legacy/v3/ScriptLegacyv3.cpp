@@ -1,13 +1,16 @@
-
+#if RETRO_PLATFORM != RETRO_WII
 RSDK::Legacy::v3::ObjectScript RSDK::Legacy::v3::objectScriptList[LEGACY_v3_OBJECT_COUNT];
 
 RSDK::Legacy::v3::ScriptFunction RSDK::Legacy::v3::scriptFunctionList[LEGACY_v3_FUNCTION_COUNT];
+#endif
 int32 RSDK::Legacy::v3::scriptFunctionCount = 0;
 
+#if RETRO_PLATFORM != RETRO_WII
 int32 RSDK::Legacy::v3::scriptCode[LEGACY_v3_SCRIPTDATA_COUNT];
 int32 RSDK::Legacy::v3::jumpTable[LEGACY_v3_JUMPTABLE_COUNT];
 int32 RSDK::Legacy::v3::jumpTableStack[LEGACY_v3_JUMPSTACK_COUNT];
 int32 RSDK::Legacy::v3::functionStack[LEGACY_v3_FUNCSTACK_COUNT];
+#endif
 
 int32 RSDK::Legacy::v3::scriptCodePos     = 0;
 int32 RSDK::Legacy::v3::scriptCodeOffset  = 0;
