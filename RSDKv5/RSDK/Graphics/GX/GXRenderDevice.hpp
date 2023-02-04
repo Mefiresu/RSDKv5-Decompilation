@@ -35,6 +35,7 @@ public:
     static bool CheckFPSCap();
     static void UpdateFPSCap();
 
+    static bool InitShaders();
     static void LoadShader(const char *fileName, bool32 linear);
 
     static inline void ShowCursor(bool32 shown) {}
@@ -42,7 +43,6 @@ public:
     static inline void SetWindowTitle() {}
 
 private:
-    static bool InitShaders();
     static bool SetupRendering();
     static void InitVertexBuffer();
     static bool InitGraphicsAPI();

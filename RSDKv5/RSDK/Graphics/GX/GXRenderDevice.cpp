@@ -299,6 +299,10 @@ void RenderDevice::UpdateFPSCap() {
 
 }
 
+bool RenderDevice::InitShaders() {
+    return true;
+}
+
 void RenderDevice::LoadShader(const char *fileName, bool32 linear) {
 
 }
