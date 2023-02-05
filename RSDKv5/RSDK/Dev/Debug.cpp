@@ -103,7 +103,13 @@ void RSDK::PrintLog(int32 mode, const char *message, ...)
         }
 
 #if !RETRO_USE_ORIGINAL_CODE && RETRO_PLATFORM != RETRO_ANDROID
+#if RETRO_PLATFORM == RETRO_WII
+        char buffer[sizeof(wiiCustomPath)+7]; // Custom path + "log.txt"
+        sprintf_s(buffer, sizeof(buffer), "%slog.txt", wiiCustomPath);
+        FileIO *file = fOpen(buffer, "a");
+#else
         FileIO *file = fOpen(BASE_PATH "log.txt", "a");
+#endif
         if (file) {
             fWrite(&outputString, 1, strlen(outputString), file);
             fClose(file);
