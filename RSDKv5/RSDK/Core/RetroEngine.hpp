@@ -530,6 +530,9 @@ enum GameRegions {
 #include <androidHelpers.hpp>
 
 #undef RETRO_USING_MOUSE
+#elif RETRO_PLATFORM == RETRO_WII
+// Custom data path for handling multiple instances
+extern char wiiCustomPath[32];
 #endif
 
 #if RETRO_RENDERDEVICE_SDL2 || RETRO_INPUTDEVICE_SDL2 || RETRO_AUDIODEVICE_SDL2

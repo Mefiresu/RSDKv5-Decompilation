@@ -1164,8 +1164,7 @@ void RSDK::SKU::InitUserDirectory()
     SKU::SetUserFileCallbacks("./", NULL, NULL);
 
 #elif RETRO_PLATFORM == RETRO_WII
-
-    SKU::SetUserFileCallbacks(BASE_PATH, NULL, NULL);
+    SKU::SetUserFileCallbacks(wiiCustomPath, NULL, NULL);
 
 #else
 
