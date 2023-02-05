@@ -2,6 +2,14 @@
 
 #define JSMAXGC 101.0f //maximum left joystick value for gamecube controller
 
+// Swap two buttons
+#define SWAP(button1,button2) \
+    do { \
+        uint8 tmp = button1; \
+        button1 = button2; \
+        button2 = tmp; \
+    } while (0);
+
 using namespace RSDK;
 
 void RSDK::SKU::InputDeviceWii::UpdateInput() {
@@ -81,6 +89,14 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
         this->vDelta_L = (float)PAD_StickY(0) / (JSMAXGC / 2.0f);
         this->hDelta_L = (float)PAD_StickX(0) / (JSMAXGC / 2.0f);
     }
+
+#if RETRO_REV0U
+    // Swap face buttons when running in legacy mode (since faceButtonFlip is unused on the game side)
+    if (engine.version != 5) {
+        SWAP(this->stateA, this->stateB);
+        SWAP(this->stateX, this->stateY);
+    }
+#endif
 
     // Update both
     this->ProcessInput(CONT_ANY);
