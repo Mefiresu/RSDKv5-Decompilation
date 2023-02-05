@@ -22,6 +22,11 @@ void (*RSDK::globalVarsInitCB)(void *globals) = NULL;
 
 RetroEngine RSDK::engine = RetroEngine();
 
+#if RETRO_PLATFORM == RETRO_WII
+// Custom data path for handling multiple instances
+char wiiCustomPath[32] = BASE_PATH;
+#endif
+
 int32 RSDK::RunRetroEngine(int32 argc, char *argv[])
 {
     ParseArguments(argc, argv);
@@ -628,6 +633,14 @@ void RSDK::ParseArguments(int32 argc, char *argv[])
             engine.consoleEnabled = true;
             engine.devMenu        = true;
         }
+
+#if RETRO_PLATFORM == RETRO_WII
+        // Parse potential custom path from meta.xml
+        find = strstr(argv[a], "path=");
+        if (find) {
+            strcpy(wiiCustomPath, &find[5]);
+        }
+#endif
     }
 }
 
