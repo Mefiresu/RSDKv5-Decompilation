@@ -1,7 +1,9 @@
 #include "RSDK/Core/RetroEngine.hpp"
 
 using namespace RSDK;
-
+#if RETRO_PLATFORM == RETRO_WII
+#include <algorithm>
+#endif
 #if RETRO_REV0U
 #include "Legacy/Scene3DLegacy.cpp"
 #endif
@@ -176,7 +178,9 @@ void RSDK::SetIdentityMatrix(Matrix *matrix)
 void RSDK::MatrixMultiply(Matrix *dest, Matrix *matrixA, Matrix *matrixB)
 {
     int32 result[4][4];
+#if RETRO_PLATFORM == RETRO_WII
     memset(result, 0, 4 * 4 * sizeof(int32));
+#endif
 
     for (int32 i = 0; i < 0x10; ++i) {
         uint32 rowA        = i / 4;
@@ -879,6 +883,12 @@ void RSDK::Draw3DScene(uint16 sceneID)
 
         Scene3DFace *a = scn->faceBuffer;
 
+#if RETRO_PLATFORM == RETRO_WII
+        // Use the faster std::sort instead
+        std::sort(a, a + scn->faceCount, [](const Scene3DFace &a, const Scene3DFace &b) {
+            return a.depth > b.depth;
+        });
+#else
         int i, j;
         Scene3DFace temp;
 
@@ -893,6 +903,8 @@ void RSDK::Draw3DScene(uint16 sceneID)
             }
             a[j+1] = temp;
         }
+
+#endif
 
         // Finally, display the faces.
 
