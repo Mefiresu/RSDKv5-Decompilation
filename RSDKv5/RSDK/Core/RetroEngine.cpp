@@ -1498,6 +1498,7 @@ void RSDK::InitCoreAPI()
 #endif
 
 #if __wii__
+    L2Enhance();
     if (!fatInitDefault()) {
         exit(1);
     }
