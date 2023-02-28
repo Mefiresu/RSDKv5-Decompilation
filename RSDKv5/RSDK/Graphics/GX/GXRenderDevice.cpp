@@ -223,7 +223,7 @@ void RenderDevice::CopyFrameBuffer() {
 
 void RenderDevice::FlipScreen()
 {
-    if (videoSettings.width720 & CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
+    if (videoSettings.width720 & CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
         // render tiled
         GX_SetScissor(0, 0 - 2, 640, vmode->efbHeight + 4);
         GX_SetScissorBoxOffset(0, 0 - 2);
