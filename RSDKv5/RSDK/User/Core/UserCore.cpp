@@ -368,6 +368,7 @@ void RSDK::LoadSettingsINI()
 
 #if RETRO_PLATFORM == RETRO_WII
         videoSettings.runIn240p     = iniparser_getboolean(ini, "Video:runIn240p", false);
+        videoSettings.width720       = iniparser_getboolean(ini, "Video:width720", false);
 #endif
 
         engine.streamsEnabled = iniparser_getboolean(ini, "Audio:streamsEnabled", true);
@@ -519,6 +520,7 @@ void RSDK::LoadSettingsINI()
 
         //default to not running in 240p on Wii
         videoSettings.runIn240p                  = false;
+        videoSettings.width720                    = false;
 #else
         customSettings.confirmButtonFlip         = false;
 #endif
@@ -671,6 +673,7 @@ void RSDK::SaveSettingsINI(bool32 writeToFile)
 #endif
 #if RETRO_PLATFORM == RETRO_WII
         WriteText(file, "runIn240p=%s\n", (videoSettings.runIn240p ? "y" : "n"));
+        WriteText(file, "width720=%s\n", (videoSettings.width720 ? "y" : "n"));
 #endif
 
         // ================

@@ -51,26 +51,35 @@ bool RenderDevice::Init() {
     // Initialize the video system
     VIDEO_Init();
 
-    if(!videoSettings.runIn240p) {
+    if (!videoSettings.runIn240p) {
         vmode = VIDEO_GetPreferredMode(NULL);
 
-        // Check for aspect ratio
+        // Check for aspect ratio and width
         if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
-            vmode->viWidth = 672;
-            viewWidth = 848;
-        } else { // 4:3
+            if (videoSettings.width720) {
+                vmode->viWidth = 720;
+                vmode->fbWidth = 720;
+                viewWidth      = 848;
+            }
+            else {
+                vmode->viWidth = 672;
+                viewWidth      = 848;
+            }
+        }
+        else { // 4:3
             viewWidth = 640;
         }
         if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
             vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
             vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
-        } else {
+        }
+        else {
             vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
             vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
         }
     }
     else {
-        vmode = &TVNtsc240Ds;
+        vmode     = &TVNtsc240Ds;
         viewWidth = 640;
     }
 
@@ -212,13 +221,67 @@ void RenderDevice::CopyFrameBuffer() {
     GX_LoadTexObj(&fbTex, GX_TEXMAP0);
 }
 
-void RenderDevice::FlipScreen() {
-    draw_square();
+void RenderDevice::FlipScreen()
+{
+    if (videoSettings.width720 & CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
+        // render tiled
+        GX_SetScissor(0, 0 - 2, 640, vmode->efbHeight + 4);
+        GX_SetScissorBoxOffset(0, 0 - 2);
+        GX_ClearBoundingBox();
+
+        draw_square();
+
+        GX_SetDispCopyFrame2Field(GX_COPY_PROGRESSIVE);
+        GX_SetDispCopySrc(0, 2, 640, vmode->efbHeight);
+        GX_SetDispCopyDst(vmode->fbWidth, vmode->efbHeight);
+
+        GX_CopyDisp(xfb, GX_TRUE);
+
+        GX_SetDispCopyFrame2Field(0x1);
+        GX_SetDispCopySrc(0, 0, 640, 2);
+        GX_SetDispCopyDst(0, 0);
+
+        GX_CopyDisp(xfb, GX_TRUE);
+
+        GX_SetDispCopyFrame2Field(0x1);
+        GX_SetDispCopySrc(0, 2 + vmode->efbHeight, 640, 2);
+        GX_SetDispCopyDst(0, 0);
+
+        GX_CopyDisp(xfb, GX_TRUE);
+
+        GX_SetScissor(640, 0 - 2, 80, vmode->efbHeight + 4);
+        GX_SetScissorBoxOffset(640, 0 - 2);
+        GX_ClearBoundingBox();
+
+        draw_square();
+
+        GX_SetDispCopyFrame2Field(GX_COPY_PROGRESSIVE);
+        GX_SetDispCopySrc(0, 2, 80, vmode->efbHeight);
+        GX_SetDispCopyDst(vmode->fbWidth, vmode->efbHeight);
+
+        GX_CopyDisp((void *)(u32)xfb + 640 * 2, GX_TRUE);
+
+        GX_SetDispCopyFrame2Field(0x1);
+        GX_SetDispCopySrc(0, 0, 80, 2);
+        GX_SetDispCopyDst(0, 0);
+
+        GX_CopyDisp((void *)(u32)xfb + 640 * 2, GX_TRUE);
+
+        GX_SetDispCopyFrame2Field(0x1);
+        GX_SetDispCopySrc(0, 2 + vmode->efbHeight, 80, 2);
+        GX_SetDispCopyDst(0, 0);
+
+        GX_CopyDisp((void *)(u32)xfb + 640 * 2, GX_TRUE);
+    }
+    else {
+        // render normal
+        draw_square();
+        GX_CopyDisp(xfb, GX_TRUE);
+    }
 
     GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate(GX_TRUE);
 
-    GX_CopyDisp(xfb, GX_TRUE);
     GX_DrawDone();
 
     VIDEO_Flush();
