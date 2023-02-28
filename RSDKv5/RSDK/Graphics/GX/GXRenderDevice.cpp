@@ -5,8 +5,7 @@
 
 static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = {0};
 
-static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
-static int fb = 0; // Current external framebuffer
+static unsigned int *xfb[1] = { NULL }; // Single buffered
 static GXRModeObj *vmode;
 static GXTexObj fbTex; // Texture object for the game framebuffer
 static uint16 *fbGX; // Framebuffer texture
@@ -80,19 +79,12 @@ bool RenderDevice::Init() {
 
     // Allocate the video buffers
     xfb[0] = (u32 *)SYS_AllocateFramebuffer(vmode);
-    xfb[1] = (u32 *)SYS_AllocateFramebuffer(vmode);
     DCInvalidateRange(xfb[0], VIDEO_GetFrameBufferSize(vmode));
-    DCInvalidateRange(xfb[1], VIDEO_GetFrameBufferSize(vmode));
     xfb[0] = (u32 *)MEM_K0_TO_K1(xfb[0]);
-    xfb[1] = (u32 *)MEM_K0_TO_K1(xfb[1]);
-
     VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
-    VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
-    VIDEO_SetNextFramebuffer(xfb[0]);
 
     // Setup console (used for showing printf)
     CON_Init(xfb[0], 20, 20, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
-    CON_Init(xfb[1], 20, 20, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
 
     // Show the screen
     VIDEO_SetBlack(FALSE);
@@ -225,11 +217,10 @@ void RenderDevice::FlipScreen() {
     GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate(GX_TRUE);
 
-    fb ^= 1; // Toggle framebuffer index
-    GX_CopyDisp(xfb[fb], GX_TRUE);
+    GX_CopyDisp(xfb[0], GX_TRUE);
     GX_DrawDone();
 
-    VIDEO_SetNextFramebuffer(xfb[fb]);
+    VIDEO_SetNextFramebuffer(xfb[0]);
     VIDEO_Flush();
 }
 
@@ -240,7 +231,6 @@ void RenderDevice::Release(bool32 isRefresh) {
         free(fbGX);
 
     free(xfb[0]);
-    free(xfb[1]);
 }
 
 void RenderDevice::RefreshWindow() {
