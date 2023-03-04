@@ -5,7 +5,7 @@
 
 static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = {0};
 
-static unsigned int *xfb = { NULL }; // Single buffered
+static void *xfb; // Single buffered
 static GXRModeObj *vmode;
 static GXTexObj fbTex; // Texture object for the game framebuffer
 static uint16 *fbGX; // Framebuffer texture
@@ -24,11 +24,40 @@ static s16 square[] __attribute__((aligned(32))) = {
     -HASPECT, -VASPECT, 0
 };
 
+//indirect texture matrix for sharp bilinear
+static float indtexmtx[2][3] = {
+	{ +.5, +.0, +.0 },
+	{ +.0, +.5, +.0 }
+};
+
+
+//indirect texture
+static uint16_t indtexdata[][4 * 4] ATTRIBUTE_ALIGN(32) = {
+	{
+		0xE0E0, 0xA0E0, 0x60E0, 0x20E0,
+		0xE0A0, 0xA0A0, 0x60A0, 0x20A0,
+		0xE060, 0xA060, 0x6060, 0x2060,
+		0xE020, 0xA020, 0x6020, 0x2020,
+	}, {
+		0xC0C0, 0x40C0, 0xC0C0, 0x40C0,
+		0xC040, 0x4040, 0xC040, 0x4040,
+		0xC0C0, 0x40C0, 0xC0C0, 0x40C0,
+		0xC040, 0x4040, 0xC040, 0x4040,
+	}, {
+		0x8080, 0x8080, 0x8080, 0x8080,
+		0x8080, 0x8080, 0x8080, 0x8080,
+		0x8080, 0x8080, 0x8080, 0x8080,
+		0x8080, 0x8080, 0x8080, 0x8080,
+	}
+};
+
+static GXTexObj indtexobj;
+
+
 static inline void
 draw_vert (u8 pos, f32 s, f32 t) {
     f32 scaleFactor = (float)(viewWidth / 2) / (float)actualWidth;
     GX_Position1x8(pos);
-    GX_Color1u32(0xffffffff);
     GX_TexCoord2f32(s * scaleFactor, t);
 }
 
@@ -39,10 +68,11 @@ draw_square() {
     guMtxIdentity(mv);
     GX_LoadPosMtxImm(mv, GX_PNMTX0);
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+    //texel fix makes uvs 1:1 with texels
     draw_vert(0, 0.0, 0.0);
-    draw_vert(1, 1.0, 0.0);
-    draw_vert(2, 1.0, 1.0);
-    draw_vert(3, 0.0, 1.0);
+    draw_vert(1, (float)actualWidth, 0.0);
+    draw_vert(2, (float)actualWidth, 240.0);
+    draw_vert(3, 0.0, 240.0);
     GX_End();
 }
 
@@ -112,7 +142,7 @@ bool RenderDevice::Init() {
     GXColor background = { 0, 0, 0, 0xff };
     GX_SetCopyClear(background, 0x00ffffff);
 
-    GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
+    GX_SetViewport(1.0f / 24.0f, 1.0f / 24.0f, vmode->fbWidth, vmode->efbHeight, 0.0f, 1.0f);
     GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
 
     GX_SetDispCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
@@ -134,21 +164,89 @@ bool RenderDevice::Init() {
 
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
-    GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    //texel and pixel center fix
+    Mtx m;
+    for (int i = GX_TEXCOORD0; i < GX_MAXCOORD; i++) 
+        GX_SetTexCoordScaleManually(i, GX_TRUE, 1, 1);
+
+        for (int i = 0; i < 10; i++) {
+            float s = 1 << (i + 1);
+
+            guMtxScale(m, s, s, s);
+            GX_LoadTexMtxImm(m, GX_TEXMTX0 + i * 3, GX_MTX3x4);
+        }
+
+        guMtxTrans(m, 1. / 64., 1. / 64., 0);
+        GX_LoadTexMtxImm(m, GX_DTTIDENTITY, GX_MTX3x4);
+
+        for (int i = 0; i < 9; i++) {
+            float x = i % 3 - 1;
+            float y = i / 3 - 1;
+
+            if (i % 2 == 0) {
+                x /= 2;
+                y /= 2;
+            }
+
+            x += 1. / 64.;
+            y += 1. / 64.;
+
+            guMtxTrans(m, x, y, 0);
+            GX_LoadTexMtxImm(m, GX_DTTMTX1 + i * 3, GX_MTX3x4);
+        }
+
+    //Sharp Bilinear filtering for Widescreen
+    if (CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
+        GX_InitTexObj(&indtexobj, indtexdata, 4, 4, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_TRUE);
+        GX_InitTexObjLOD(&indtexobj, GX_LIN_MIP_LIN, GX_LINEAR, 0., 2., -1. / 3., GX_FALSE, GX_TRUE, GX_ANISO_4);
+        GX_LoadTexObj(&indtexobj, GX_TEXMAP1);
+
+        GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ZERO, GX_LO_CLEAR);
+        GX_SetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+        GX_SetZCompLoc(GX_FALSE);
+
+        GX_SetNumChans(0);
+        GX_SetNumTexGens(2);
+        GX_SetNumIndStages(1);
+        GX_SetNumTevStages(1);
+
+        GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+        GX_SetTexCoordGen(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1);
+
+        GX_SetIndTexOrder(GX_INDTEXSTAGE0, GX_TEXCOORD1, GX_TEXMAP1);
+        GX_SetIndTexMatrix(GX_ITM_0, indtexmtx, -7);
+
+        GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+        GX_SetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K3_R);
+        GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ONE, GX_CC_TEXC, GX_CC_ZERO);
+        GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GX_SetTevIndirect(GX_TEVSTAGE0, GX_INDTEXSTAGE0, GX_ITF_8, GX_ITB_STU, GX_ITM_0, GX_ITW_OFF, GX_ITW_OFF, GX_FALSE, GX_FALSE, GX_ITBA_OFF);
+    }
+    //Nearest filtering for 4:3
+    else {
+        GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ZERO, GX_LO_CLEAR);
+        GX_SetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+        GX_SetZCompLoc(GX_FALSE);
+
+        GX_SetNumChans(0);
+        GX_SetNumTexGens(1);
+        GX_SetNumIndStages(0);
+        GX_SetNumTevStages(1);
+
+        GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+
+        GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+        GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+    }
 
     GX_SetArray(GX_VA_POS, square, 3 * sizeof(s16));
 
-    GX_SetNumTexGens(1);
-    GX_SetNumChans(1);
-
-    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
-    GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
     GX_InvalidateTexAll();
 
     // Game stuff
@@ -169,7 +267,12 @@ bool RenderDevice::Init() {
     fbGX = (uint16 *)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
     memset(screens[0].frameBuffer, 0, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
     GX_InitTexObj(&fbTex, fbGX, screens[0].pitch, SCREEN_YSIZE, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GX_InitTexObjFilterMode(&fbTex, GX_NEAR, GX_NEAR); // Nearest neighbor filtering
+    if (CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
+        GX_InitTexObjFilterMode(&fbTex, GX_LINEAR, GX_LINEAR); // Linear filtering for the sharp bilinear setup
+    }
+    else {
+        GX_InitTexObjFilterMode(&fbTex, GX_NEAR, GX_NEAR); // Nearest filtering for 4:3
+    }
 
     InitInputDevices();
     if (!AudioDevice::Init())
@@ -223,60 +326,54 @@ void RenderDevice::CopyFrameBuffer() {
 
 void RenderDevice::FlipScreen()
 {
-    if (videoSettings.width720 & CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
-        // render tiled
-        GX_SetScissor(0, 0 - 2, 640, vmode->efbHeight + 4);
-        GX_SetScissorBoxOffset(0, 0 - 2);
-        GX_ClearBoundingBox();
+    //tiled rendering code
+    uint16_t (*xfb1)[vmode->fbWidth] = xfb;
+    //loop if XFB height greater than EFB height
+    for (int y = 0; y < vmode->xfbHeight; y += vmode->efbHeight) {
 
-        draw_square();
+        //vertical clamping for the EFB/XFB copy
+        uint8_t clamp = GX_CLAMP_NONE;
 
-        GX_SetDispCopyFrame2Field(GX_COPY_PROGRESSIVE);
-        GX_SetDispCopySrc(0, 2, 640, vmode->efbHeight);
-        GX_SetDispCopyDst(vmode->fbWidth, vmode->efbHeight);
+        if (y == 0)
+            clamp |= GX_CLAMP_TOP;
+        if (y + vmode->efbHeight == vmode->xfbHeight)
+            clamp |= GX_CLAMP_BOTTOM;
 
-        GX_CopyDisp(xfb, GX_TRUE);
+        GX_SetCopyClamp(clamp);
 
-        GX_SetDispCopyFrame2Field(0x1);
-        GX_SetDispCopySrc(0, 0, 640, 2);
-        GX_SetDispCopyDst(0, 0);
+        //loop if XFB width greater than EFB width
+        for (int x = 0; x < vmode->fbWidth; x += 640) {
+            uint16_t efbWidth = MIN(vmode->fbWidth - x, 640);
 
-        GX_CopyDisp(xfb, GX_TRUE);
+            //set up scissor region
+            GX_SetScissor(x, y - 2, efbWidth, vmode->efbHeight + 4);
+            GX_SetScissorBoxOffset(x, y - 2);
+            GX_ClearBoundingBox();
 
-        GX_SetDispCopyFrame2Field(0x1);
-        GX_SetDispCopySrc(0, 2 + vmode->efbHeight, 640, 2);
-        GX_SetDispCopyDst(0, 0);
+            //draw fb texture
+            draw_square();
 
-        GX_CopyDisp(xfb, GX_TRUE);
+            //copy the buffer
+            GX_SetDispCopyFrame2Field(GX_COPY_PROGRESSIVE);
+            GX_SetDispCopySrc(0, 2, efbWidth, vmode->efbHeight);
+            GX_SetDispCopyDst(vmode->fbWidth, vmode->efbHeight);
 
-        GX_SetScissor(640, 0 - 2, 80, vmode->efbHeight + 4);
-        GX_SetScissorBoxOffset(640, 0 - 2);
-        GX_ClearBoundingBox();
+            GX_CopyDisp(&xfb1[y][x], GX_TRUE);
 
-        draw_square();
+            //clear the overlapping lines
+            GX_SetDispCopyFrame2Field(GX_COPY_NONE);
+            GX_SetDispCopySrc(0, 0, efbWidth, 2);
+            GX_SetDispCopyDst(0, 0);
 
-        GX_SetDispCopyFrame2Field(GX_COPY_PROGRESSIVE);
-        GX_SetDispCopySrc(0, 2, 80, vmode->efbHeight);
-        GX_SetDispCopyDst(vmode->fbWidth, vmode->efbHeight);
+            GX_CopyDisp(&xfb1[y][x], GX_TRUE);
 
-        GX_CopyDisp((void *)(u32)xfb + 640 * 2, GX_TRUE);
+            //clear the overlapping lines
+            GX_SetDispCopyFrame2Field(GX_COPY_NONE);
+            GX_SetDispCopySrc(0, 2 + vmode->efbHeight, efbWidth, 2);
+            GX_SetDispCopyDst(0, 0);
 
-        GX_SetDispCopyFrame2Field(0x1);
-        GX_SetDispCopySrc(0, 0, 80, 2);
-        GX_SetDispCopyDst(0, 0);
-
-        GX_CopyDisp((void *)(u32)xfb + 640 * 2, GX_TRUE);
-
-        GX_SetDispCopyFrame2Field(0x1);
-        GX_SetDispCopySrc(0, 2 + vmode->efbHeight, 80, 2);
-        GX_SetDispCopyDst(0, 0);
-
-        GX_CopyDisp((void *)(u32)xfb + 640 * 2, GX_TRUE);
-    }
-    else {
-        // render normal
-        draw_square();
-        GX_CopyDisp(xfb, GX_TRUE);
+            GX_CopyDisp(&xfb1[y][x], GX_TRUE);
+        }
     }
 
     GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
