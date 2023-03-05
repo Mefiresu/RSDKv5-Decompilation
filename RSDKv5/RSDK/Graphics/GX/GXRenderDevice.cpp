@@ -3,12 +3,12 @@
 #include <malloc.h>
 #include <wiiuse/wpad.h>
 
-static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = {0};
+static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = { 0 };
 
-static void *xfb; // Single buffered
-static GXRModeObj *vmode;
+static void* xfb; // Single buffered
+static GXRModeObj* vmode;
 static GXTexObj fbTex; // Texture object for the game framebuffer
-static uint16 *fbGX; // Framebuffer texture
+static uint16* fbGX; // Framebuffer texture
 static int initialWidth; // Width given to the game
 static int actualWidth; // Actual game framebuffer width
 
@@ -26,36 +26,36 @@ static s16 square[] __attribute__((aligned(32))) = {
 
 //indirect texture matrix for sharp bilinear
 static float indtexmtx[2][3] = {
-	{ +.5, +.0, +.0 },
-	{ +.0, +.5, +.0 }
+    { +.5, +.0, +.0 },
+    { +.0, +.5, +.0 }
 };
 
 
 //indirect texture
 static uint16_t indtexdata[][4 * 4] ATTRIBUTE_ALIGN(32) = {
-	{
-		0xE0E0, 0xA0E0, 0x60E0, 0x20E0,
-		0xE0A0, 0xA0A0, 0x60A0, 0x20A0,
-		0xE060, 0xA060, 0x6060, 0x2060,
-		0xE020, 0xA020, 0x6020, 0x2020,
-	}, {
-		0xC0C0, 0x40C0, 0xC0C0, 0x40C0,
-		0xC040, 0x4040, 0xC040, 0x4040,
-		0xC0C0, 0x40C0, 0xC0C0, 0x40C0,
-		0xC040, 0x4040, 0xC040, 0x4040,
-	}, {
-		0x8080, 0x8080, 0x8080, 0x8080,
-		0x8080, 0x8080, 0x8080, 0x8080,
-		0x8080, 0x8080, 0x8080, 0x8080,
-		0x8080, 0x8080, 0x8080, 0x8080,
-	}
+    {
+        0xE0E0, 0xA0E0, 0x60E0, 0x20E0,
+        0xE0A0, 0xA0A0, 0x60A0, 0x20A0,
+        0xE060, 0xA060, 0x6060, 0x2060,
+        0xE020, 0xA020, 0x6020, 0x2020,
+    }, {
+        0xC0C0, 0x40C0, 0xC0C0, 0x40C0,
+        0xC040, 0x4040, 0xC040, 0x4040,
+        0xC0C0, 0x40C0, 0xC0C0, 0x40C0,
+        0xC040, 0x4040, 0xC040, 0x4040,
+    }, {
+        0x8080, 0x8080, 0x8080, 0x8080,
+        0x8080, 0x8080, 0x8080, 0x8080,
+        0x8080, 0x8080, 0x8080, 0x8080,
+        0x8080, 0x8080, 0x8080, 0x8080,
+    }
 };
 
 static GXTexObj indtexobj;
 
 
 static inline void
-draw_vert (u8 pos, f32 s, f32 t) {
+draw_vert(u8 pos, f32 s, f32 t) {
     f32 scaleFactor = (float)(viewWidth / 2) / (float)actualWidth;
     GX_Position1x8(pos);
     GX_TexCoord2f32(s * scaleFactor, t);
@@ -86,15 +86,9 @@ bool RenderDevice::Init() {
 
         // Check for aspect ratio and width
         if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
-            if (videoSettings.width720) {
-                vmode->viWidth = 720;
-                vmode->fbWidth = 720;
-                viewWidth      = 848;
-            }
-            else {
-                vmode->viWidth = 672;
-                viewWidth      = 848;
-            }
+            vmode->viWidth = 720;
+            vmode->fbWidth = 720;
+            viewWidth = 848;
         }
         else { // 4:3
             viewWidth = 640;
@@ -109,7 +103,7 @@ bool RenderDevice::Init() {
         }
     }
     else {
-        vmode     = &TVNtsc240Ds;
+        vmode = &TVNtsc240Ds;
         viewWidth = 640;
     }
 
@@ -117,9 +111,9 @@ bool RenderDevice::Init() {
     VIDEO_Configure(vmode);
 
     // Allocate the video buffers
-    xfb = (u32 *)SYS_AllocateFramebuffer(vmode);
+    xfb = (u32*)SYS_AllocateFramebuffer(vmode);
     DCInvalidateRange(xfb, VIDEO_GetFrameBufferSize(vmode));
-    xfb = (u32 *)MEM_K0_TO_K1(xfb);
+    xfb = (u32*)MEM_K0_TO_K1(xfb);
     VIDEO_ClearFrameBuffer(vmode, xfb, COLOR_BLACK);
     VIDEO_SetNextFramebuffer(xfb);
 
@@ -170,34 +164,34 @@ bool RenderDevice::Init() {
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     //texel and pixel center fix
     Mtx m;
-    for (int i = GX_TEXCOORD0; i < GX_MAXCOORD; i++) 
+    for (int i = GX_TEXCOORD0; i < GX_MAXCOORD; i++)
         GX_SetTexCoordScaleManually(i, GX_TRUE, 1, 1);
 
-        for (int i = 0; i < 10; i++) {
-            float s = 1 << (i + 1);
+    for (int i = 0; i < 10; i++) {
+        float s = 1 << (i + 1);
 
-            guMtxScale(m, s, s, s);
-            GX_LoadTexMtxImm(m, GX_TEXMTX0 + i * 3, GX_MTX3x4);
+        guMtxScale(m, s, s, s);
+        GX_LoadTexMtxImm(m, GX_TEXMTX0 + i * 3, GX_MTX3x4);
+    }
+
+    guMtxTrans(m, 1. / 64., 1. / 64., 0);
+    GX_LoadTexMtxImm(m, GX_DTTIDENTITY, GX_MTX3x4);
+
+    for (int i = 0; i < 9; i++) {
+        float x = i % 3 - 1;
+        float y = i / 3 - 1;
+
+        if (i % 2 == 0) {
+            x /= 2;
+            y /= 2;
         }
 
-        guMtxTrans(m, 1. / 64., 1. / 64., 0);
-        GX_LoadTexMtxImm(m, GX_DTTIDENTITY, GX_MTX3x4);
+        x += 1. / 64.;
+        y += 1. / 64.;
 
-        for (int i = 0; i < 9; i++) {
-            float x = i % 3 - 1;
-            float y = i / 3 - 1;
-
-            if (i % 2 == 0) {
-                x /= 2;
-                y /= 2;
-            }
-
-            x += 1. / 64.;
-            y += 1. / 64.;
-
-            guMtxTrans(m, x, y, 0);
-            GX_LoadTexMtxImm(m, GX_DTTMTX1 + i * 3, GX_MTX3x4);
-        }
+        guMtxTrans(m, x, y, 0);
+        GX_LoadTexMtxImm(m, GX_DTTMTX1 + i * 3, GX_MTX3x4);
+    }
 
     //Sharp Bilinear filtering for Widescreen
     if (CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
@@ -250,7 +244,7 @@ bool RenderDevice::Init() {
     GX_InvalidateTexAll();
 
     // Game stuff
-    scanlines = (ScanlineInfo *)malloc(SCREEN_YSIZE * sizeof(ScanlineInfo));
+    scanlines = (ScanlineInfo*)malloc(SCREEN_YSIZE * sizeof(ScanlineInfo));
     memset(scanlines, 0, SCREEN_YSIZE * sizeof(ScanlineInfo));
 
     engine.inFocus = 1;
@@ -264,7 +258,7 @@ bool RenderDevice::Init() {
     RSDK::SetScreenSize(0, initialWidth, SCREEN_YSIZE);
 
     // Init framebuffer texture
-    fbGX = (uint16 *)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
+    fbGX = (uint16*)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
     memset(screens[0].frameBuffer, 0, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
     GX_InitTexObj(&fbTex, fbGX, screens[0].pitch, SCREEN_YSIZE, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     if (CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
@@ -286,10 +280,10 @@ bool RenderDevice::Init() {
  * Equivalent to libogc's MakeTexture565 without the hardcoded texture size.
  */
 static inline void
-fb_to_tiled_texture(void *dst, const void *src, int32_t width, int32_t height) {
-    uint32_t *dst32 = (uint32_t *)dst;
-    const uint32_t *src32 = (const uint32_t *)src;
-    const uint32_t *tmp_src32;
+fb_to_tiled_texture(void* dst, const void* src, int32_t width, int32_t height) {
+    uint32_t* dst32 = (uint32_t*)dst;
+    const uint32_t* src32 = (const uint32_t*)src;
+    const uint32_t* tmp_src32;
 
     for (int y = 0; y < height >> 2; y++) {
 
@@ -302,8 +296,8 @@ fb_to_tiled_texture(void *dst, const void *src, int32_t width, int32_t height) {
             dst32[3] = src32[width_2 + 0x001];
             dst32[4] = src32[width + 0x000]; // width / 2 * 2
             dst32[5] = src32[width + 0x001]; // width / 2 * 2
-            dst32[6] = src32[width_2*3 + 0x000];
-            dst32[7] = src32[width_2*3 + 0x001];
+            dst32[6] = src32[width_2 * 3 + 0x000];
+            dst32[7] = src32[width_2 * 3 + 0x001];
 
             src32 += 2;
             dst32 += 8;
@@ -327,7 +321,7 @@ void RenderDevice::CopyFrameBuffer() {
 void RenderDevice::FlipScreen()
 {
     //tiled rendering code
-    uint16_t (*xfb1)[vmode->fbWidth] = xfb;
+    uint16_t(*xfb1)[vmode->fbWidth] = xfb;
     //loop if XFB height greater than EFB height
     for (int y = 0; y < vmode->xfbHeight; y += vmode->efbHeight) {
 
@@ -361,14 +355,14 @@ void RenderDevice::FlipScreen()
             GX_CopyDisp(&xfb1[y][x], GX_TRUE);
 
             //clear the overlapping lines
-            GX_SetDispCopyFrame2Field(GX_COPY_NONE);
+            GX_SetDispCopyFrame2Field(0x1);
             GX_SetDispCopySrc(0, 0, efbWidth, 2);
             GX_SetDispCopyDst(0, 0);
 
             GX_CopyDisp(&xfb1[y][x], GX_TRUE);
 
             //clear the overlapping lines
-            GX_SetDispCopyFrame2Field(GX_COPY_NONE);
+            GX_SetDispCopyFrame2Field(0x1);
             GX_SetDispCopySrc(0, 2 + vmode->efbHeight, efbWidth, 2);
             GX_SetDispCopyDst(0, 0);
 
@@ -397,29 +391,29 @@ void RenderDevice::RefreshWindow() {
 
 }
 
-void RenderDevice::GetWindowSize(int32 *width, int32 *height) {
+void RenderDevice::GetWindowSize(int32* width, int32* height) {
     if (width)
         *width = vmode->fbWidth;
     if (height)
         *height = vmode->xfbHeight;
 }
 
-void RenderDevice::SetupImageTexture(int32 width, int32 height, uint8 *imagePixels) {
+void RenderDevice::SetupImageTexture(int32 width, int32 height, uint8* imagePixels) {
 
 }
 
-void RenderDevice::SetupVideoTexture_YUV420(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
-                                        int32 strideV) {
+void RenderDevice::SetupVideoTexture_YUV420(int32 width, int32 height, uint8* yPlane, uint8* uPlane, uint8* vPlane, int32 strideY, int32 strideU,
+    int32 strideV) {
 
 }
 
-void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
-                                        int32 strideV) {
+void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8* yPlane, uint8* uPlane, uint8* vPlane, int32 strideY, int32 strideU,
+    int32 strideV) {
 
 }
 
-void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
-                                        int32 strideV) {
+void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8* yPlane, uint8* uPlane, uint8* vPlane, int32 strideY, int32 strideU,
+    int32 strideV) {
 
 }
 
@@ -453,6 +447,6 @@ bool RenderDevice::InitShaders() {
     return true;
 }
 
-void RenderDevice::LoadShader(const char *fileName, bool32 linear) {
+void RenderDevice::LoadShader(const char* fileName, bool32 linear) {
 
 }
