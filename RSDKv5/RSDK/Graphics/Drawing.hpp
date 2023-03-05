@@ -128,7 +128,6 @@ struct VideoSettings {
     float viewportY;
 #if RETRO_PLATFORM == RETRO_WII
     bool runIn240p;
-    bool width720;
 #endif
 };
 
