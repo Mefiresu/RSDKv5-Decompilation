@@ -3,12 +3,12 @@
 #include <malloc.h>
 #include <wiiuse/wpad.h>
 
-static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = { 0 };
+static unsigned char gp_fifo[GX_FIFO_MINSIZE] __attribute__((aligned(32))) = {0};
 
-static void* xfb; // Single buffered
-static GXRModeObj* vmode;
+static void *xfb; // Single buffered
+static GXRModeObj *vmode;
 static GXTexObj fbTex; // Texture object for the game framebuffer
-static uint16* fbGX; // Framebuffer texture
+static uint16 *fbGX; // Framebuffer texture
 static int initialWidth; // Width given to the game
 static int actualWidth; // Actual game framebuffer width
 
@@ -25,14 +25,14 @@ static s16 square[] __attribute__((aligned(32))) = {
 };
 
 //indirect texture matrix for sharp bilinear
-static float indtexmtx[2][3] = {
+const float indtexmtx[2][3] = {
     { +.5, +.0, +.0 },
     { +.0, +.5, +.0 }
 };
 
 
 //indirect texture
-static uint16_t indtexdata[][4 * 4] ATTRIBUTE_ALIGN(32) = {
+const uint16_t indtexdata[][4 * 4] ATTRIBUTE_ALIGN(32) = {
     {
         0xE0E0, 0xA0E0, 0x60E0, 0x20E0,
         0xE0A0, 0xA0A0, 0x60A0, 0x20A0,
@@ -55,7 +55,7 @@ static GXTexObj indtexobj;
 
 
 static inline void
-draw_vert(u8 pos, f32 s, f32 t) {
+draw_vert (u8 pos, f32 s, f32 t) {
     f32 scaleFactor = (float)(viewWidth / 2) / (float)actualWidth;
     GX_Position1x8(pos);
     GX_TexCoord2f32(s * scaleFactor, t);
@@ -81,23 +81,21 @@ bool RenderDevice::Init() {
     // Initialize the video system
     VIDEO_Init();
 
-    if (!videoSettings.runIn240p) {
+    if(!videoSettings.runIn240p) {
         vmode = VIDEO_GetPreferredMode(NULL);
 
-        // Check for aspect ratio and width
+        // Check for aspect ratio
         if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
             vmode->viWidth = 720;
             vmode->fbWidth = 720;
             viewWidth = 848;
-        }
-        else { // 4:3
+        } else { // 4:3
             viewWidth = 640;
         }
         if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
             vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
             vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
-        }
-        else {
+        } else {
             vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
             vmode->viYOrigin = (VI_MAX_HEIGHT_NTSC - vmode->viHeight) / 2;
         }
@@ -111,9 +109,9 @@ bool RenderDevice::Init() {
     VIDEO_Configure(vmode);
 
     // Allocate the video buffers
-    xfb = (u32*)SYS_AllocateFramebuffer(vmode);
+    xfb = (u32 *)SYS_AllocateFramebuffer(vmode);
     DCInvalidateRange(xfb, VIDEO_GetFrameBufferSize(vmode));
-    xfb = (u32*)MEM_K0_TO_K1(xfb);
+    xfb = (u32 *)MEM_K0_TO_K1(xfb);
     VIDEO_ClearFrameBuffer(vmode, xfb, COLOR_BLACK);
     VIDEO_SetNextFramebuffer(xfb);
 
@@ -136,6 +134,7 @@ bool RenderDevice::Init() {
     GXColor background = { 0, 0, 0, 0xff };
     GX_SetCopyClear(background, 0x00ffffff);
 
+    //pixel center fix
     GX_SetViewport(1.0f / 24.0f, 1.0f / 24.0f, vmode->fbWidth, vmode->efbHeight, 0.0f, 1.0f);
     GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
 
@@ -162,7 +161,7 @@ bool RenderDevice::Init() {
 
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    //texel and pixel center fix
+    //texel center fix
     Mtx m;
     for (int i = GX_TEXCOORD0; i < GX_MAXCOORD; i++)
         GX_SetTexCoordScaleManually(i, GX_TRUE, 1, 1);
@@ -244,7 +243,7 @@ bool RenderDevice::Init() {
     GX_InvalidateTexAll();
 
     // Game stuff
-    scanlines = (ScanlineInfo*)malloc(SCREEN_YSIZE * sizeof(ScanlineInfo));
+    scanlines = (ScanlineInfo *)malloc(SCREEN_YSIZE * sizeof(ScanlineInfo));
     memset(scanlines, 0, SCREEN_YSIZE * sizeof(ScanlineInfo));
 
     engine.inFocus = 1;
@@ -258,7 +257,7 @@ bool RenderDevice::Init() {
     RSDK::SetScreenSize(0, initialWidth, SCREEN_YSIZE);
 
     // Init framebuffer texture
-    fbGX = (uint16*)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
+    fbGX = (uint16 *)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
     memset(screens[0].frameBuffer, 0, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
     GX_InitTexObj(&fbTex, fbGX, screens[0].pitch, SCREEN_YSIZE, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     if (CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
@@ -280,10 +279,10 @@ bool RenderDevice::Init() {
  * Equivalent to libogc's MakeTexture565 without the hardcoded texture size.
  */
 static inline void
-fb_to_tiled_texture(void* dst, const void* src, int32_t width, int32_t height) {
-    uint32_t* dst32 = (uint32_t*)dst;
-    const uint32_t* src32 = (const uint32_t*)src;
-    const uint32_t* tmp_src32;
+fb_to_tiled_texture(void *dst, const void *src, int32_t width, int32_t height) {
+    uint32_t *dst32 = (uint32_t *)dst;
+    const uint32_t *src32 = (const uint32_t *)src;
+    const uint32_t *tmp_src32;
 
     for (int y = 0; y < height >> 2; y++) {
 
@@ -296,8 +295,8 @@ fb_to_tiled_texture(void* dst, const void* src, int32_t width, int32_t height) {
             dst32[3] = src32[width_2 + 0x001];
             dst32[4] = src32[width + 0x000]; // width / 2 * 2
             dst32[5] = src32[width + 0x001]; // width / 2 * 2
-            dst32[6] = src32[width_2 * 3 + 0x000];
-            dst32[7] = src32[width_2 * 3 + 0x001];
+            dst32[6] = src32[width_2*3 + 0x000];
+            dst32[7] = src32[width_2*3 + 0x001];
 
             src32 += 2;
             dst32 += 8;
@@ -391,28 +390,28 @@ void RenderDevice::RefreshWindow() {
 
 }
 
-void RenderDevice::GetWindowSize(int32* width, int32* height) {
+void RenderDevice::GetWindowSize(int32 *width, int32 *height) {
     if (width)
         *width = vmode->fbWidth;
     if (height)
         *height = vmode->xfbHeight;
 }
 
-void RenderDevice::SetupImageTexture(int32 width, int32 height, uint8* imagePixels) {
+void RenderDevice::SetupImageTexture(int32 width, int32 height, uint8 *imagePixels) {
 
 }
 
-void RenderDevice::SetupVideoTexture_YUV420(int32 width, int32 height, uint8* yPlane, uint8* uPlane, uint8* vPlane, int32 strideY, int32 strideU,
+void RenderDevice::SetupVideoTexture_YUV420(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
     int32 strideV) {
 
 }
 
-void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8* yPlane, uint8* uPlane, uint8* vPlane, int32 strideY, int32 strideU,
+void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
     int32 strideV) {
 
 }
 
-void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8* yPlane, uint8* uPlane, uint8* vPlane, int32 strideY, int32 strideU,
+void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
     int32 strideV) {
 
 }
@@ -447,6 +446,6 @@ bool RenderDevice::InitShaders() {
     return true;
 }
 
-void RenderDevice::LoadShader(const char* fileName, bool32 linear) {
+void RenderDevice::LoadShader(const char *fileName, bool32 linear) {
 
 }
