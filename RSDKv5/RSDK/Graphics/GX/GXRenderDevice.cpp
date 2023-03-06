@@ -163,8 +163,9 @@ bool RenderDevice::Init() {
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     //texel center fix
     Mtx m;
-    for (int i = GX_TEXCOORD0; i < GX_MAXCOORD; i++)
+    for (int i = GX_TEXCOORD0; i < GX_MAXCOORD; i++) {
         GX_SetTexCoordScaleManually(i, GX_TRUE, 1, 1);
+    }
 
     for (int i = 0; i < 10; i++) {
         float s = 1 << (i + 1);
