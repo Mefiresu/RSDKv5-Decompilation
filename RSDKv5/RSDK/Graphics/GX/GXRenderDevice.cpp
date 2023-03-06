@@ -25,14 +25,14 @@ static s16 square[] __attribute__((aligned(32))) = {
 };
 
 //indirect texture matrix for sharp bilinear
-const float indtexmtx[2][3] = {
+static float indtexmtx[2][3] = {
     { +.5, +.0, +.0 },
     { +.0, +.5, +.0 }
 };
 
 
 //indirect texture
-const uint16_t indtexdata[][4 * 4] ATTRIBUTE_ALIGN(32) = {
+static uint16_t indtexdata[][4 * 4] ATTRIBUTE_ALIGN(32) = {
     {
         0xE0E0, 0xA0E0, 0x60E0, 0x20E0,
         0xE0A0, 0xA0A0, 0x60A0, 0x20A0,
@@ -320,7 +320,8 @@ void RenderDevice::CopyFrameBuffer() {
 void RenderDevice::FlipScreen()
 {
     //tiled rendering code
-    uint16_t(*xfb1)[vmode->fbWidth] = xfb;
+    //declare pointer to pixel xy in xfb
+    uint16_t(*xfb1)[vmode->fbWidth] = (uint16_t (*)[vmode->_gx_rmodeobj::fbWidth])(xfb);
     //loop if XFB height greater than EFB height
     for (int y = 0; y < vmode->xfbHeight; y += vmode->efbHeight) {
 
