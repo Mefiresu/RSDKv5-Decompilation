@@ -320,6 +320,7 @@ void RenderDevice::CopyFrameBuffer() {
 
 void RenderDevice::FlipScreen()
 {
+    VIDEO_WaitVSync();
     //tiled rendering code
     //declare pointer to pixel xy in xfb
     uint16_t(*xfb1)[vmode->fbWidth] = (uint16_t (*)[vmode->_gx_rmodeobj::fbWidth])(xfb);
@@ -435,7 +436,7 @@ void RenderDevice::InitFPSCap() {
 }
 
 bool RenderDevice::CheckFPSCap() {
-    VIDEO_WaitVSync();
+    // VIDEO_WaitVSync();
 
     return true;
 }
