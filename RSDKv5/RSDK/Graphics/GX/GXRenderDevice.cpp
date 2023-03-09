@@ -258,8 +258,8 @@ bool RenderDevice::Init() {
     RSDK::SetScreenSize(0, initialWidth, SCREEN_YSIZE);
 
     // Init framebuffer texture
-    fbGX = (uint16 *)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
-    memset(screens[0].frameBuffer, 0, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
+    fbGX = (uint16 *)memalign(32, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16) + 32);
+    memset(screens[0].frameBuffer, 0, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16) + 32);
     GX_InitTexObj(&fbTex, fbGX, screens[0].pitch, SCREEN_YSIZE, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     if (CONF_GetAspectRatio() == CONF_ASPECT_16_9 & !videoSettings.runIn240p) {
         GX_InitTexObjFilterMode(&fbTex, GX_LINEAR, GX_LINEAR); // Linear filtering for the sharp bilinear setup
@@ -280,8 +280,8 @@ bool RenderDevice::Init() {
  * Equivalent to libogc's MakeTexture565 without the hardcoded texture size.
  */
 static inline void
-fb_to_tiled_texture(void *dst, const void *src, int32_t width, int32_t height) {
-    uint32_t *dst32 = (uint32_t *)dst;
+fb_to_tiled_texture(void *dst, const void *src, uint32_t width, uint32_t height) {
+    GX_RedirectWriteGatherPipe(dst);
     const uint32_t *src32 = (const uint32_t *)src;
     const uint32_t *tmp_src32;
 
@@ -289,22 +289,22 @@ fb_to_tiled_texture(void *dst, const void *src, int32_t width, int32_t height) {
 
         tmp_src32 = src32;
         for (int x = 0; x < width >> 2; x++) {
-            int32_t width_2 = width / 2;
-            dst32[0] = src32[0x000];
-            dst32[1] = src32[0x001];
-            dst32[2] = src32[width_2 + 0x000];
-            dst32[3] = src32[width_2 + 0x001];
-            dst32[4] = src32[width + 0x000]; // width / 2 * 2
-            dst32[5] = src32[width + 0x001]; // width / 2 * 2
-            dst32[6] = src32[width_2*3 + 0x000];
-            dst32[7] = src32[width_2*3 + 0x001];
+            uint32_t width_2 = width / 2;
+            wgPipe->U32 = src32[0x000];
+            wgPipe->U32 = src32[0x001];
+            wgPipe->U32 = src32[width_2 + 0x000];
+            wgPipe->U32 = src32[width_2 + 0x001];
+            wgPipe->U32 = src32[width + 0x000]; // width / 2 * 2
+            wgPipe->U32 = src32[width + 0x001]; // width / 2 * 2
+            wgPipe->U32 = src32[width_2*3 + 0x000];
+            wgPipe->U32 = src32[width_2*3 + 0x001];
 
             src32 += 2;
-            dst32 += 8;
         }
 
         src32 = tmp_src32 + width * 2;
     }
+    GX_RestoreWriteGatherPipe();
 }
 
 void RenderDevice::CopyFrameBuffer() {
@@ -313,7 +313,7 @@ void RenderDevice::CopyFrameBuffer() {
     // Clear texture objects
     GX_InvVtxCache();
     GX_InvalidateTexAll();
-    DCFlushRange(fbGX, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
+    // DCFlushRange(fbGX, screens[0].pitch * SCREEN_YSIZE * sizeof(uint16));
 
     GX_LoadTexObj(&fbTex, GX_TEXMAP0);
 }
