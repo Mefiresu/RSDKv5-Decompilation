@@ -40,6 +40,7 @@ target_compile_options(RetroEngine PRIVATE
     $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti -fno-threadsafe-statics> 
     -Os -fomit-frame-pointer -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fmerge-all-constants)
 target_link_options(RetroEngine PRIVATE -Wl,-gc-sections -Wl,--strip-all -Wl,--orphan-handling=discard -Wl,-Map,.map)
+target_compile_definitions(RetroEngine PRIVATE BASE_PATH=/RSDKv5/)
 
 target_link_libraries(RetroEngine fat aesnd)
 
