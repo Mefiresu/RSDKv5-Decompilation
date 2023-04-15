@@ -10,8 +10,6 @@ if(NOT GAME_STATIC)
     message(FATAL_ERROR "GAME_STATIC must be on")
 endif()
 
-set(RETRO_MOD_LOADER OFF CACHE BOOL "Disable the mod loader" FORCE)
-
 # pkg_check_modules(OGG ogg)
 # 
 # if(NOT OGG_FOUND)
