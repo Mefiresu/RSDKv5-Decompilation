@@ -92,7 +92,8 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
 
 #if RETRO_REV0U
     // Swap face buttons when running in legacy mode (since faceButtonFlip is unused on the game side)
-    if (engine.version != 5) {
+    // The dev menu uses it though, so don't swap when it's opened.
+    if (engine.version != 5 && RSDK::Legacy::gameMode != RSDK::Legacy::ENGINE_DEVMENU) {
         SWAP(this->stateA, this->stateB);
         SWAP(this->stateX, this->stateY);
     }
