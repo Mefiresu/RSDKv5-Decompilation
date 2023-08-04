@@ -41,16 +41,22 @@ set(SHARED_COMPILE
     -Os -fomit-frame-pointer -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fmerge-all-constants
 )
 
-set (SHARED_LINK
-    -Wl,-gc-sections -Wl,--strip-all -Wl,--orphan-handling=discard -Wl,-Map,.map
+set(SHARED_LINK
+    -Wl,-gc-sections -Wl,--strip-all -Wl,-Map,.map
+)
+
+# Lower framebuffer size and screen count to save up RAM
+set(SHARED_DEFINES
+    SCREEN_XMAX=512 SCREEN_COUNT=1
 )
 
 target_compile_options(RetroEngine PRIVATE ${SHARED_COMPILE})
-target_compile_definitions(RetroEngine PRIVATE BASE_PATH="/RSDKv5/" RETRO_DISABLE_LOG=1)
+target_compile_definitions(RetroEngine PRIVATE ${SHARED_DEFINES} BASE_PATH="/RSDKv5/" RETRO_DISABLE_LOG=1)
 target_link_options(RetroEngine PRIVATE ${SHARED_LINK})
 target_link_libraries(RetroEngine fat aesnd)
 
 target_compile_options(${GAME_NAME} PRIVATE ${SHARED_COMPILE})
+target_compile_definitions(${GAME_NAME} PRIVATE ${SHARED_DEFINES})
 target_link_options(${GAME_NAME} PRIVATE ${SHARED_LINK})
 
 set(PLATFORM Wii)
