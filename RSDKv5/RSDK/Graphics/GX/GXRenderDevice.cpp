@@ -102,6 +102,8 @@ bool RenderDevice::Init() {
     }
     else {
         vmode = &TVEurgb60Hz240Ds;
+        // Set correct viTVMode based on the current mode used, which should be compatible with both NTSC and PAL
+        vmode->viTVMode = VI_TVMODE(VIDEO_GetPreferredMode(NULL)->viTVMode >> 2, VI_NON_INTERLACE);
         viewWidth = 640;
     }
 
