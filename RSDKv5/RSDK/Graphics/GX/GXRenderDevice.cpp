@@ -388,7 +388,7 @@ void RenderDevice::Release(bool32 isRefresh) {
     if (fbGX)
         free(fbGX);
 
-    free(xfb);
+    free(MEM_K1_TO_K0(xfb));
 }
 
 void RenderDevice::RefreshWindow() {
