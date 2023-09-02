@@ -1,6 +1,7 @@
 #include <ogc/lwp.h>
 #include <aesndlib.h>
 
+static lwp_t async_thread = LWP_THREAD_NULL;
 static lwp_t audio_thread = LWP_THREAD_NULL;
 static lwpq_t audio_queue = LWP_TQUEUE_NULL;
 static bool thread_running = false;
@@ -24,6 +25,13 @@ static void *AudioThread(void *arg) {
 
         LWP_ThreadSleep(audio_queue);
     }
+
+    return NULL;
+}
+
+static void *AsyncThread(void *arg) {
+    ChannelInfo *channel = (ChannelInfo *)arg;
+    LoadStream(channel);
 
     return NULL;
 }
@@ -56,6 +64,7 @@ void AudioDevice::Release() {
     thread_running = false;
     LWP_ThreadSignal(audio_queue);
     LWP_JoinThread(audio_thread, NULL);
+    LWP_JoinThread(async_thread, NULL);
     LWP_CloseQueue(audio_queue);
     AESND_FreeVoice(aesnd_pb);
 
@@ -67,6 +76,9 @@ void AudioDevice::InitAudioChannels() {
 }
 
 void AudioDevice::HandleStreamLoad(ChannelInfo *channel, bool32 async) {
-    // FIXME: Support async
-    LoadStream(channel);
+    if (async) {
+        LWP_CreateThread(&async_thread, AsyncThread, channel, NULL, 0, 67);
+    } else {
+        LoadStream(channel);
+    }
 }
