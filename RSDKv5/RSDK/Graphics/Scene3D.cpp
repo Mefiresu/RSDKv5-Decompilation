@@ -178,7 +178,7 @@ void RSDK::SetIdentityMatrix(Matrix *matrix)
 void RSDK::MatrixMultiply(Matrix *dest, Matrix *matrixA, Matrix *matrixB)
 {
     int32 result[4][4];
-#if RETRO_PLATFORM == RETRO_WII
+#if RETRO_PLATFORM != RETRO_WII
     memset(result, 0, 4 * 4 * sizeof(int32));
 #endif
 
