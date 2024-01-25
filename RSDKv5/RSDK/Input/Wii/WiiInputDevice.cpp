@@ -15,8 +15,8 @@ using namespace RSDK;
 void RSDK::SKU::InputDeviceWii::UpdateInput() {
     WPAD_ScanPads();
 
-    this->buttonMasksWii = WPAD_ButtonsHeld(0);
-    WPADData *data = WPAD_Data(0);
+    this->buttonMasksWii = WPAD_ButtonsHeld(this->id - CONT_P1);
+    WPADData *data = WPAD_Data(this->id - CONT_P1);
     int type = data->exp.type;
     switch (type) {
         case WPAD_EXP_NONE:
@@ -101,7 +101,7 @@ void RSDK::SKU::InputDeviceWii::UpdateInput() {
 
     // Update both
     this->ProcessInput(CONT_ANY);
-    this->ProcessInput(CONT_P1);
+    this->ProcessInput(this->id);
 }
 
 void RSDK::SKU::InputDeviceWii::ProcessInput(int32 controllerID) {
@@ -168,4 +168,7 @@ void RSDK::SKU::InitWiiInputAPI() {
     WPAD_Init();
     PAD_Init();
     SKU::InitWiiInputDevice(CONT_P1);
+    SKU::InitWiiInputDevice(CONT_P2);
+    SKU::InitWiiInputDevice(CONT_P3);
+    SKU::InitWiiInputDevice(CONT_P4);
 }
