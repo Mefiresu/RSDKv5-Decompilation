@@ -146,6 +146,10 @@ void RSDK::ReleaseInputDevices()
 #if RETRO_INPUTDEVICE_SDL2
     SKU::ReleaseSDL2InputAPI();
 #endif
+
+#if RETRO_INPUTDEVICE_WII
+    SKU::ReleaseWiiInputAPI();
+#endif
 }
 
 void RSDK::ClearInput()

@@ -25,6 +25,7 @@ struct InputDeviceWii : InputDevice {
 };
 
 void InitWiiInputAPI();
+void ReleaseWiiInputAPI();
 
 InputDeviceWii *InitWiiInputDevice(uint32 id);
 

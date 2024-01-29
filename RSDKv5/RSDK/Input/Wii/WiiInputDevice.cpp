@@ -169,3 +169,7 @@ void RSDK::SKU::InitWiiInputAPI() {
     WPAD_Init();
     PAD_Init();
 }
+
+void RSDK::SKU::ReleaseWiiInputAPI() {
+    WPAD_Shutdown();
+}
