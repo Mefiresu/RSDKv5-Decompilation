@@ -131,15 +131,11 @@ void RSDK::SKU::InputDeviceWii::ProcessInput(int32 controllerID) {
 }
 
 void RSDK::SKU::InputDeviceWii::CloseDevice() {
-    //printf("CloseDevice(): closing wii input device %i\r");
     this->active     = false;
     this->isAssigned = false;
 }
 
 RSDK::SKU::InputDeviceWii *RSDK::SKU::InitWiiInputDevice(uint32 id) {
-    /*printf("InitWiiInputDevice(%u): new %s on port %i\r",
-        id, SKU::IsGameCubeController(id) ? "GameCube controller" : "wiimote", SKU::GetWiiInputDevicePort(id));*/
-    
     if (inputDeviceCount >= INPUTDEVICE_COUNT)
         return NULL;
 
@@ -170,7 +166,6 @@ RSDK::SKU::InputDeviceWii *RSDK::SKU::InitWiiInputDevice(uint32 id) {
 }
 
 void RSDK::SKU::InitWiiInputAPI() {
-    printf("InitWiiInputAPI()\r");
     WPAD_Init();
     PAD_Init();
 }
