@@ -6,8 +6,8 @@ struct InputDeviceWii : InputDevice {
     void ProcessInput(int32 controllerID);
     void CloseDevice();
 
-    uint32 buttonMasksWii;
-    uint16 buttonMasksGC;
+    uint32 buttonMasks;
+    uint32 buttonMasksPrev;
     uint8 stateUp;
     uint8 stateDown;
     uint8 stateLeft;
@@ -25,7 +25,22 @@ struct InputDeviceWii : InputDevice {
 };
 
 void InitWiiInputAPI();
+void ReleaseWiiInputAPI();
 
 InputDeviceWii *InitWiiInputDevice(uint32 id);
+
+inline uint32 MakeWiiInputDeviceID(bool isGameCube, int port) {
+    uint32 id = port + 1;  // we can't use 0, since that's reserved for INPUT_NONE
+    id |= isGameCube << 3;
+    return id;
+}
+
+inline bool IsGameCubeController(uint32 id) {
+    return (id & (1 << 3)) != 0;
+}
+
+inline int GetWiiInputDevicePort(uint32 id) {
+    return (id & ~(1 << 3)) - 1;
+}
 
 } // namespace SKU

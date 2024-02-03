@@ -421,7 +421,59 @@ void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yP
 
 }
 
+static void PollWiimoteConnectionStatus(void)
+{
+    static uint8_t prevConn;
+    uint8_t conn;
+
+    WPAD_ScanPads();
+    conn = 0;
+    for (int port = 0; port < 4; port++) {
+        uint8_t mask = 1 << port;
+
+        if (WPAD_Probe(port, NULL) == WPAD_ERR_NONE)
+            conn |= mask;
+
+        if ((conn & mask) != (prevConn & mask)) {
+            uint32 id = SKU::MakeWiiInputDeviceID(false, port);
+            if (conn & mask) {
+                SKU::InitWiiInputDevice(id);
+            }
+            else {
+                RemoveInputDevice(InputDeviceFromID(id));
+            }
+        }
+    }
+    prevConn = conn;
+}
+
+static void PollGCControllerConnectionStatus(void)
+{
+    static uint8_t prevConn;
+    uint8_t conn;
+
+    conn = PAD_ScanPads();
+    for (int port = 0; port < 4; port++) {
+        uint8_t mask = 1 << port;
+
+        if ((conn & mask) != (prevConn & mask)) {
+            uint32 id = SKU::MakeWiiInputDeviceID(true, port);
+            if (conn & mask) {
+                SKU::InitWiiInputDevice(id);
+            }
+            else {
+                RemoveInputDevice(InputDeviceFromID(id));
+            }
+        }
+    }
+    prevConn = conn;
+}
+
 bool RenderDevice::ProcessEvents() {
+    // TODO: try to handle connect/disconnect with wiiuse callbacks?
+    PollWiimoteConnectionStatus();
+    PollGCControllerConnectionStatus();
+
     // Close when pressing home
     // FIXME: Maybe this should go in WiiInputDevice, but stopping the engine here makes more sense
     u16 ButtonsHeldGC = PAD_ButtonsHeld(0);
