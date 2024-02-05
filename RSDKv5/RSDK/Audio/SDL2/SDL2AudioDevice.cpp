@@ -14,7 +14,12 @@ bool32 AudioDevice::Init()
 
     SDL_AudioSpec want;
     want.freq     = AUDIO_FREQUENCY;
+#if RETRO_PLATFORM == RETRO_WII
+    // The Wii doesn't support floating point audio
+    want.format   = AUDIO_S16SYS;
+#else
     want.format   = AUDIO_F32SYS;
+#endif
     want.samples  = MIX_BUFFER_SIZE / AUDIO_CHANNELS;
     want.channels = AUDIO_CHANNELS;
     want.callback = AudioCallback;

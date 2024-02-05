@@ -3,9 +3,21 @@ find_package(PkgConfig REQUIRED)
 add_executable(RetroEngine ${RETRO_FILES})
 
 set(RETRO_SUBSYSTEM "GX" CACHE STRING "The subsystem to use")
-if(NOT (RETRO_SUBSYSTEM STREQUAL "GX"))
-    message(FATAL_ERROR "RETRO_SUBSYSTEM must be set to GX")
+# Two sets of subsystems are available on the Wii:
+# - GX/AESND/wiiuse: common low level APIs provided by libogc, faster and better looking (recommended)
+# - SDL2: experimental support, slower but usable
+if(RETRO_SUBSYSTEM STREQUAL "GX")
+    target_link_libraries(RetroEngine aesnd)
+elseif(RETRO_SUBSYSTEM STREQUAL "SDL2")
+    message(WARNING "SDL2 support is experimental!")
+    pkg_check_modules(SDL2 sdl2 REQUIRED)
+    target_link_libraries(RetroEngine ${SDL2_STATIC_LIBRARIES})
+    target_link_options(RetroEngine PRIVATE ${SDL2_STATIC_LDLIBS_OTHER})
+    target_compile_options(RetroEngine PRIVATE ${SDL2_STATIC_CFLAGS})
+else()
+    message(FATAL_ERROR "RETRO_SUBSYSTEM must be set to GX or SDL2")
 endif()
+
 if(NOT GAME_STATIC)
     message(FATAL_ERROR "GAME_STATIC must be on")
 endif()
@@ -53,7 +65,7 @@ set(SHARED_DEFINES
 target_compile_options(RetroEngine PRIVATE ${SHARED_COMPILE})
 target_compile_definitions(RetroEngine PRIVATE ${SHARED_DEFINES} BASE_PATH="/RSDKv5/" RETRO_DISABLE_LOG=1)
 target_link_options(RetroEngine PRIVATE ${SHARED_LINK})
-target_link_libraries(RetroEngine fat aesnd)
+target_link_libraries(RetroEngine fat)
 
 target_compile_options(${GAME_NAME} PRIVATE ${SHARED_COMPILE})
 target_compile_definitions(${GAME_NAME} PRIVATE ${SHARED_DEFINES})
