@@ -88,11 +88,11 @@ bool RenderDevice::Init() {
         if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
             vmode->viWidth = 720;
             vmode->fbWidth = 720;
-            viewWidth = 848;
+            viewWidth = 854;
         } else { // 4:3
             viewWidth = 640;
         }
-        if (vmode == &TVPal576IntDfScale || vmode == &TVPal576ProgScale) {
+        if (VI_FORMAT_FROM_MODE(vmode->viTVMode) == VI_PAL) {
             vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
             vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - vmode->viHeight) / 2;
         } else {
