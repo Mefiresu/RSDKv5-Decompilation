@@ -104,7 +104,12 @@ bool RenderDevice::Init() {
         vmode = &TVEurgb60Hz240Ds;
         // Set correct viTVMode based on the current mode used, which should be compatible with both NTSC and PAL
         vmode->viTVMode = VI_TVMODE(VIDEO_GetPreferredMode(NULL)->viTVMode >> 2, VI_NON_INTERLACE);
-        viewWidth = 640;
+        // Check for aspect ratio even in 240p mode
+        if (CONF_GetAspectRatio() == CONF_ASPECT_16_9) {
+            viewWidth = 848;
+        } else { // 4:3
+            viewWidth = 640;
+        }
     }
 
     // Set up the video system with the chosen mode
