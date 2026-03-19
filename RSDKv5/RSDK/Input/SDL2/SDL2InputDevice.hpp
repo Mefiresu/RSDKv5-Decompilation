@@ -35,7 +35,8 @@ struct InputDeviceSDL : InputDevice {
     float hDelta_R;
 
     SDL_GameController *controllerPtr;
-    bool32 swapABXY;
+    bool32 swapAB;
+    bool32 swapXY;
 };
 
 InputDeviceSDL *InitSDL2InputDevice(uint32 id, SDL_GameController *game_controller);

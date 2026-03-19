@@ -397,7 +397,7 @@ void LinkGameLogic(EngineInfo info);
 // ORIGINAL CLASS
 
 // Windows.h already included by master header
-#if !(RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_SWITCH)
+#if !(RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WIIU)
 #include <dlfcn.h>
 #endif
 
@@ -444,6 +444,9 @@ public:
 
     static inline Handle PlatformLoadLibrary(std::string path)
     {
+#if RETRO_PLATFORM == RETRO_WIIU
+        return NULL;
+#else
         Handle ret;
 #if RETRO_PLATFORM == RETRO_WIN
         ret = (Handle)LoadLibraryA(path.c_str());
@@ -465,10 +468,14 @@ public:
 #endif // ! RETRO_PLATFORM != SWITCH
 #endif // ! RETRO_PLATFORM == WIN
         return ret;
+#endif
     }
 
     static inline Handle Open(std::string path)
     {
+#if RETRO_PLATFORM == RETRO_WIIU
+        return NULL;
+#else
         std::string original_path = path;
 
         // if it ends with extension
@@ -509,20 +516,28 @@ public:
         }
 #endif // ! RETRO_ARCHITECTURE
         return ret;
+#endif
     }
 
     static inline void Close(Handle handle)
     {
+#if RETRO_PLATFORM == RETRO_WIIU
+        return;
+#else
         if (handle)
 #if RETRO_PLATFORM == RETRO_WIN
             FreeLibrary(handle);
 #else
             dlclose(handle);
 #endif
+#endif
     }
 
     static inline void *GetSymbol(Handle handle, const char *symbol)
     {
+#if RETRO_PLATFORM == RETRO_WIIU
+        return NULL;
+#else
         if (!handle)
             return NULL;
 #if RETRO_PLATFORM == RETRO_WIN
@@ -530,11 +545,14 @@ public:
 #else
         return (void *)dlsym(handle, symbol);
 #endif
+#endif
     }
 
     static inline char *GetError()
     {
-#if RETRO_PLATFORM == RETRO_WIN
+#if RETRO_PLATFORM == RETRO_WIIU
+        return NULL;
+#elif RETRO_PLATFORM == RETRO_WIN
         return (char *)GetLastErrorAsString();
 #else
         return dlerror();

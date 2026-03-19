@@ -94,11 +94,11 @@ void RSDK::SKU::InputDeviceSDL::UpdateInput()
     this->stateDown     = (this->buttonMasks & KEYMASK_DOWN) != 0;
     this->stateLeft     = (this->buttonMasks & KEYMASK_LEFT) != 0;
     this->stateRight    = (this->buttonMasks & KEYMASK_RIGHT) != 0;
-    this->stateA        = (this->buttonMasks & (swapABXY ? KEYMASK_B : KEYMASK_A)) != 0;
-    this->stateB        = (this->buttonMasks & (swapABXY ? KEYMASK_A : KEYMASK_B)) != 0;
+    this->stateA        = (this->buttonMasks & (swapAB ? KEYMASK_B : KEYMASK_A)) != 0;
+    this->stateB        = (this->buttonMasks & (swapAB ? KEYMASK_A : KEYMASK_B)) != 0;
     this->stateC        = (this->buttonMasks & KEYMASK_C) != 0;
-    this->stateX        = (this->buttonMasks & (swapABXY ? KEYMASK_Y : KEYMASK_X)) != 0;
-    this->stateY        = (this->buttonMasks & (swapABXY ? KEYMASK_X : KEYMASK_Y)) != 0;
+    this->stateX        = (this->buttonMasks & (swapXY ? KEYMASK_Y : KEYMASK_X)) != 0;
+    this->stateY        = (this->buttonMasks & (swapXY ? KEYMASK_X : KEYMASK_Y)) != 0;
     this->stateZ        = (this->buttonMasks & KEYMASK_Z) != 0;
     this->stateStart    = (this->buttonMasks & KEYMASK_START) != 0;
     this->stateSelect   = (this->buttonMasks & KEYMASK_SELECT) != 0;
@@ -199,7 +199,8 @@ RSDK::SKU::InputDeviceSDL *RSDK::SKU::InitSDL2InputDevice(uint32 id, SDL_GameCon
 
     device->controllerPtr = game_controller;
 
-    device->swapABXY     = false;
+    device->swapAB       = false;
+    device->swapXY       = false;
     uint8 controllerType = DEVICE_XBOX;
 
     const char *name = SDL_GameControllerName(device->controllerPtr);
@@ -209,9 +210,31 @@ RSDK::SKU::InputDeviceSDL *RSDK::SKU::InitSDL2InputDevice(uint32 id, SDL_GameCon
             controllerType = DEVICE_XBOX;
         else if (strstr(name, "Playstation") || strstr(name, "PS3") || strstr(name, "PS4") || strstr(name, "PS5"))
             controllerType = DEVICE_PS4;
-        else if (strstr(name, "Switch") || strstr(name, "Wii U")) {
+        else if (strstr(name, "Wii U Gamepad")) {
+            controllerType   = DEVICE_SWITCH_HANDHELD;
+            device->swapAB = true;
+            device->swapXY = true;
+#if RETRO_PLATFORM == RETRO_WIIU
+            engine.confirmFlip = true;
+#endif
+        }
+        else if (strstr(name, "Wii Remote + Nunchuk")) {
+            controllerType = DEVICE_SWITCH_JOY_GRIP;
+            device->swapAB = true;
+            engine.confirmFlip = true;
+	}
+        else if (strstr(name, "Wii Remote")) {
+            controllerType = DEVICE_SWITCH_JOY_L;
+            device->swapAB = true;
+            engine.confirmFlip = true;
+	}
+        else if (strstr(name, "Switch") || strstr(name, "Wii U") || strstr(name, "Wii Classic Controller")) {
             controllerType   = DEVICE_SWITCH_PRO;
-            device->swapABXY = true;
+            device->swapAB = true;
+            device->swapXY = true;
+#if RETRO_PLATFORM == RETRO_WIIU
+            engine.confirmFlip = true;
+#endif
         }
         else if (strstr(name, "Saturn"))
             controllerType = DEVICE_SATURN;

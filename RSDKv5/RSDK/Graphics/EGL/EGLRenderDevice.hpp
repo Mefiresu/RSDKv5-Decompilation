@@ -58,6 +58,8 @@ public:
     static NWindow *window;
 #elif RETRO_PLATFORM == RETRO_ANDROID
     static ANativeWindow *window;
+#elif RETRO_PLATFORM == RETRO_WIIU
+    static EGLNativeWindowType window;
 #endif
 
     static GLuint screenTextures[SCREEN_COUNT];

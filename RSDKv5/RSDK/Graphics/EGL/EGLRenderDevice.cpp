@@ -10,6 +10,10 @@
 
 #include <chrono>
 
+// WIIU: Disable glTexSubImage2D workaround.
+// Deleting the textures each time because glTexSubImage2D isn't implemented yet
+#define HACK_SUBIMAGE2D (1)
+
 #if RETRO_PLATFORM == RETRO_SWITCH
 #define _GLVERSION "#version 330 core\n#define in_V in\n#define in_F in\n"
 
@@ -21,7 +25,7 @@
 #define _YOFF 16
 #define _UOFF 8
 #define _VOFF 0
-#elif RETRO_PLATFORM == RETRO_ANDROID
+#elif RETRO_PLATFORM == RETRO_ANDROID || RETRO_PLATFORM == RETRO_WIIU
 #define _GLVERSION2                                                                                                                                   \
     "#version 100\n#extension GL_OES_standard_derivatives : enable\n#define in_V attribute\n#define out varying\n#define in_F varying\n"
 
@@ -84,6 +88,8 @@ EGLConfig RenderDevice::config;
 NWindow *RenderDevice::window;
 #elif RETRO_PLATFORM == RETRO_ANDROID
 ANativeWindow *RenderDevice::window;
+#elif RETRO_PLATFORM == RETRO_WIIU
+EGLNativeWindowType RenderDevice::window;
 #endif
 
 GLuint RenderDevice::VAO;
@@ -109,13 +115,19 @@ bool32 RenderDevice::isInitialized = false;
 
 bool RenderDevice::Init()
 {
+#if RETRO_PLATFORM == RETRO_WIIU
+    WHBProcInit();
+#endif
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (!display) {
         PrintLog(PRINT_NORMAL, "[EGL] Could not connect to display: %d", eglGetError());
         return false;
     }
 
-    eglInitialize(display, nullptr, nullptr);
+    if (!eglInitialize(display, nullptr, nullptr)) {
+        PrintLog(PRINT_NORMAL, "[EGL] Could not initialize EGL: %d", eglGetError());
+        return false;
+    }
 
 #if RETRO_PLATFORM == RETRO_SWITCH
     if (eglBindAPI(EGL_OPENGL_API) == EGL_FALSE) {
@@ -123,6 +135,11 @@ bool RenderDevice::Init()
         return false;
     }
 #elif RETRO_PLATFORM == RETRO_ANDROID
+#elif RETRO_PLATFORM == RETRO_WIIU
+    if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_FALSE) {
+        PrintLog(PRINT_NORMAL, "[EGL] eglBindApi failure: %d", eglGetError());
+        return false;
+    }
 #endif
 
     EGLint numConfigs;
@@ -183,7 +200,12 @@ bool RenderDevice::SetupRendering()
     SwappyGL_setMaxAutoSwapIntervalNS(SWAPPY_SWAP_60FPS);
 #endif
 
+#if RETRO_PLATFORM == RETRO_WIIU
+    surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)nullptr, nullptr);
+    window = (EGLNativeWindowType)1; // Needed for the main game loop to run
+#else
     surface = eglCreateWindowSurface(display, config, window, nullptr);
+#endif
     if (!surface) {
         PrintLog(PRINT_NORMAL, "[EGL] Surface creation failed: %d", eglGetError());
         return false;
@@ -200,7 +222,7 @@ bool RenderDevice::SetupRendering()
     } };
     int32 i = 0;
     // clang-format on
-#elif RETRO_PLATFORM == RETRO_ANDROID
+#elif RETRO_PLATFORM == RETRO_ANDROID || RETRO_PLATFORM == RETRO_WIIU
     static const int32 listCount                     = 2;
     static const EGLint attributeListList[listCount][3] = {
         { EGL_CONTEXT_MAJOR_VERSION, 3, EGL_NONE },
@@ -225,7 +247,7 @@ bool RenderDevice::SetupRendering()
     eglQueryContext(display, context, EGL_CONTEXT_CLIENT_VERSION, &contextVersion);
     PrintLog(PRINT_NORMAL, "[EGL] Context client version: %d", contextVersion);
 
-#if RETRO_PLATFORM == RETRO_ANDROID
+#if RETRO_PLATFORM == RETRO_ANDROID || RETRO_PLATFORM == RETRO_WIIU
     // Grab preprocessor info for the picked GLES version
     if (contextVersion == 3) {
         strcpy(_GLVERSION, _GLVERSION3);
@@ -318,7 +340,7 @@ bool RenderDevice::InitGraphicsAPI()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(RenderVertex), (void *)offsetof(RenderVertex, tex));
     glEnableVertexAttribArray(1);
 
-#if RETRO_PLATFORM == RETRO_SWITCH
+#if RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WIIU
     videoSettings.fsWidth  = 1920;
     videoSettings.fsHeight = 1080;
 #elif RETRO_PLATFORM == RETRO_ANDROID
@@ -646,9 +668,26 @@ void RenderDevice::CopyFrameBuffer()
     if (!isInitialized)
         return;
 
+#if RETRO_PLATFORM == RETRO_WIIU && HACK_SUBIMAGE2D
+    glDeleteTextures(SCREEN_COUNT, screenTextures);
+    glGenTextures(SCREEN_COUNT, screenTextures);
+#endif
     for (int32 s = 0; s < videoSettings.screenCount; ++s) {
         glBindTexture(GL_TEXTURE_2D, screenTextures[s]);
+#if RETRO_PLATFORM == RETRO_WIIU && HACK_SUBIMAGE2D
+        // FIXME: Byteswap the software textures
+        // for (int y = 0; y < screens[s].pitch * SCREEN_YSIZE; y++) {
+        //     screens[s].frameBuffer[y] = __builtin_bswap16(screens[s].frameBuffer[y]);
+        // }
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screens[s].pitch, SCREEN_YSIZE, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, screens[s].frameBuffer);
+
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#else
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, screens[s].pitch, SCREEN_YSIZE, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, screens[s].frameBuffer);
+#endif
     }
 }
 
@@ -676,6 +715,356 @@ bool RenderDevice::ProcessEvents()
         Release(true);
         Init();
     }
+#elif RETRO_PLATFORM == RETRO_WIIU
+    // Copied from SDL2RenderDevice
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+        case SDL_WINDOWEVENT:
+            switch (event.window.event) {
+                case SDL_WINDOWEVENT_MAXIMIZED: {
+                    // SDL_RestoreWindow(window);
+                    // SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                    // SDL_ShowCursor(SDL_FALSE);
+                    videoSettings.windowed = false;
+                    break;
+                }
+
+                case SDL_WINDOWEVENT_CLOSE: isRunning = false; break;
+
+                case SDL_WINDOWEVENT_FOCUS_GAINED:
+#if RETRO_REV02
+                    SKU::userCore->focusState = 0;
+#endif
+                    break;
+
+                case SDL_WINDOWEVENT_FOCUS_LOST:
+#if RETRO_REV02
+                    SKU::userCore->focusState = 1;
+#endif
+                    break;
+            }
+            break;
+
+        case SDL_CONTROLLERDEVICEADDED: {
+            SDL_GameController *game_controller = SDL_GameControllerOpen(event.cdevice.which);
+
+            if (game_controller != NULL) {
+                uint32 id;
+                char idBuffer[0x20];
+                sprintf_s(idBuffer, sizeof(idBuffer), "SDLDevice%d", SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(game_controller)));
+                GenerateHashCRC(&id, idBuffer);
+
+                if (SKU::InitSDL2InputDevice(id, game_controller) == NULL)
+                    SDL_GameControllerClose(game_controller);
+            }
+
+            break;
+        }
+
+        case SDL_CONTROLLERDEVICEREMOVED: {
+            uint32 id;
+            char idBuffer[0x20];
+            sprintf_s(idBuffer, sizeof(idBuffer), "SDLDevice%d", event.cdevice.which);
+            GenerateHashCRC(&id, idBuffer);
+
+            RemoveInputDevice(InputDeviceFromID(id));
+            break;
+        }
+
+        case SDL_APP_WILLENTERFOREGROUND:
+#if RETRO_REV02
+            SKU::userCore->focusState = 0;
+#endif
+            break;
+
+        case SDL_APP_WILLENTERBACKGROUND:
+#if RETRO_REV02
+            SKU::userCore->focusState = 1;
+#endif
+            break;
+
+        case SDL_APP_TERMINATING: isRunning = false; break;
+
+        case SDL_MOUSEBUTTONDOWN:
+            switch (event.button.button) {
+                case SDL_BUTTON_LEFT: touchInfo.down[0] = true; touchInfo.count = 1;
+#if !RETRO_REV02
+                    RSDK::SKU::buttonDownCount++;
+#endif
+                    break;
+
+                case SDL_BUTTON_RIGHT:
+#if !RETRO_REV02 && RETRO_INPUTDEVICE_KEYBOARD
+                    RSDK::SKU::specialKeyStates[3] = true;
+                    RSDK::SKU::buttonDownCount++;
+#endif
+                    break;
+            }
+            break;
+
+        case SDL_MOUSEBUTTONUP:
+            switch (event.button.button) {
+                case SDL_BUTTON_LEFT: touchInfo.down[0] = false; touchInfo.count = 0;
+#if !RETRO_REV02
+                    RSDK::SKU::buttonDownCount--;
+#endif
+                    break;
+
+                case SDL_BUTTON_RIGHT:
+#if !RETRO_REV02 && RETRO_INPUTDEVICE_KEYBOARD
+                    RSDK::SKU::specialKeyStates[3] = false;
+                    RSDK::SKU::buttonDownCount--;
+#endif
+                    break;
+            }
+            break;
+
+        case SDL_FINGERMOTION:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP: {
+            int32 count     = SDL_GetNumTouchFingers(event.tfinger.touchId);
+            touchInfo.count = 0;
+            for (int32 i = 0; i < count; i++) {
+                SDL_Finger *finger = SDL_GetTouchFinger(event.tfinger.touchId, i);
+                if (finger) {
+                    touchInfo.down[touchInfo.count] = true;
+                    touchInfo.x[touchInfo.count]    = finger->x;
+                    touchInfo.y[touchInfo.count]    = finger->y;
+                    touchInfo.count++;
+                }
+            }
+            break;
+        }
+
+        case SDL_KEYDOWN:
+#if !RETRO_REV02
+            ++RSDK::SKU::buttonDownCount;
+#endif
+            switch (event.key.keysym.scancode) {
+                case SDL_SCANCODE_RETURN:
+                    if (event.key.keysym.mod & KMOD_LALT) {
+                        videoSettings.windowed ^= 1;
+                        UpdateGameWindow();
+                        changedVideoSettings = false;
+                        break;
+                    }
+
+#if !RETRO_REV02 && RETRO_INPUTDEVICE_KEYBOARD
+                    RSDK::SKU::specialKeyStates[1] = true;
+#endif
+                    // [fallthrough]
+
+                default:
+#if RETRO_INPUTDEVICE_KEYBOARD
+                    SKU::UpdateKeyState(event.key.keysym.scancode);
+#endif
+                    break;
+
+                case SDL_SCANCODE_ESCAPE:
+                    if (engine.devMenu) {
+#if RETRO_REV0U
+                        if (sceneInfo.state == ENGINESTATE_DEVMENU || RSDK::Legacy::gameMode == RSDK::Legacy::ENGINE_DEVMENU)
+#else
+                        if (sceneInfo.state == ENGINESTATE_DEVMENU)
+#endif
+                            CloseDevMenu();
+                        else
+                            OpenDevMenu();
+                    }
+                    else {
+#if RETRO_INPUTDEVICE_KEYBOARD
+                        SKU::UpdateKeyState(event.key.keysym.scancode);
+#endif
+                    }
+
+#if !RETRO_REV02 && RETRO_INPUTDEVICE_KEYBOARD
+                    RSDK::SKU::specialKeyStates[0] = true;
+#endif
+                    break;
+
+#if !RETRO_USE_ORIGINAL_CODE
+                case SDL_SCANCODE_F1:
+                    if (engine.devMenu) {
+                        sceneInfo.listPos--;
+                        while (sceneInfo.listPos < sceneInfo.listCategory[sceneInfo.activeCategory].sceneOffsetStart
+                            || sceneInfo.listPos > sceneInfo.listCategory[sceneInfo.activeCategory].sceneOffsetEnd
+                            || !sceneInfo.listCategory[sceneInfo.activeCategory].sceneCount) {
+                            sceneInfo.activeCategory--;
+                            if (sceneInfo.activeCategory >= sceneInfo.categoryCount) {
+                                sceneInfo.activeCategory = sceneInfo.categoryCount - 1;
+                            }
+                            sceneInfo.listPos = sceneInfo.listCategory[sceneInfo.activeCategory].sceneOffsetEnd - 1;
+                        }
+
+#if RETRO_REV0U
+                        switch (engine.version) {
+                            default: break;
+                            case 5: LoadScene(); break;
+                            case 4:
+                            case 3: RSDK::Legacy::stageMode = RSDK::Legacy::STAGEMODE_LOAD; break;
+                        }
+#else
+                        LoadScene();
+#endif
+                    }
+                    break;
+
+                case SDL_SCANCODE_F2:
+                    if (engine.devMenu) {
+                        sceneInfo.listPos++;
+                        while (sceneInfo.listPos < sceneInfo.listCategory[sceneInfo.activeCategory].sceneOffsetStart
+                            || sceneInfo.listPos > sceneInfo.listCategory[sceneInfo.activeCategory].sceneOffsetEnd
+                            || !sceneInfo.listCategory[sceneInfo.activeCategory].sceneCount) {
+                            sceneInfo.activeCategory++;
+                            if (sceneInfo.activeCategory >= sceneInfo.categoryCount) {
+                                sceneInfo.activeCategory = 0;
+                            }
+                            sceneInfo.listPos = sceneInfo.listCategory[sceneInfo.activeCategory].sceneOffsetStart;
+                        }
+
+#if RETRO_REV0U
+                        switch (engine.version) {
+                            default: break;
+                            case 5: LoadScene(); break;
+                            case 4:
+                            case 3: RSDK::Legacy::stageMode = RSDK::Legacy::STAGEMODE_LOAD; break;
+                        }
+#else
+                        LoadScene();
+#endif
+                    }
+                    break;
+#endif
+
+                case SDL_SCANCODE_F3:
+                    if (userShaderCount)
+                        videoSettings.shaderID = (videoSettings.shaderID + 1) % userShaderCount;
+                    break;
+
+#if !RETRO_USE_ORIGINAL_CODE
+                case SDL_SCANCODE_F4:
+                    if (engine.devMenu)
+                        engine.showEntityInfo ^= 1;
+                    break;
+
+                case SDL_SCANCODE_F5:
+                    if (engine.devMenu) {
+                        // Quick-Reload
+#if RETRO_USE_MOD_LOADER
+                        if (event.key.keysym.mod & KMOD_LCTRL)
+                            RefreshModFolders();
+#endif
+
+#if RETRO_REV0U
+                        switch (engine.version) {
+                            default: break;
+                            case 5: LoadScene(); break;
+                            case 4:
+                            case 3: RSDK::Legacy::stageMode = RSDK::Legacy::STAGEMODE_LOAD; break;
+                        }
+#else
+                        LoadScene();
+#endif
+                    }
+                    break;
+
+                case SDL_SCANCODE_F6:
+                    if (engine.devMenu && videoSettings.screenCount > 1)
+                        videoSettings.screenCount--;
+                    break;
+
+                case SDL_SCANCODE_F7:
+                    if (engine.devMenu && videoSettings.screenCount < SCREEN_COUNT)
+                        videoSettings.screenCount++;
+                    break;
+
+                case SDL_SCANCODE_F8:
+                    if (engine.devMenu)
+                        engine.showUpdateRanges ^= 1;
+                    break;
+
+                case SDL_SCANCODE_F9:
+                    if (engine.devMenu)
+                        showHitboxes ^= 1;
+                    break;
+
+                case SDL_SCANCODE_F10:
+                    if (engine.devMenu)
+                        engine.showPaletteOverlay ^= 1;
+                    break;
+#endif
+                case SDL_SCANCODE_BACKSPACE:
+                    if (engine.devMenu)
+                        engine.gameSpeed = engine.fastForwardSpeed;
+                    break;
+
+                case SDL_SCANCODE_F11:
+                case SDL_SCANCODE_INSERT:
+                    if (engine.devMenu)
+                        engine.frameStep = true;
+                    break;
+
+                case SDL_SCANCODE_F12:
+                case SDL_SCANCODE_PAUSE:
+                    if (engine.devMenu) {
+#if RETRO_REV0U
+                        switch (engine.version) {
+                            default: break;
+                            case 5:
+                                if (sceneInfo.state != ENGINESTATE_NONE)
+                                    sceneInfo.state ^= ENGINESTATE_STEPOVER;
+                                break;
+                            case 4:
+                            case 3:
+                                if (RSDK::Legacy::stageMode != ENGINESTATE_NONE)
+                                    RSDK::Legacy::stageMode ^= RSDK::Legacy::STAGEMODE_STEPOVER;
+                                break;
+                        }
+#else
+                        if (sceneInfo.state != ENGINESTATE_NONE)
+                            sceneInfo.state ^= ENGINESTATE_STEPOVER;
+#endif
+                    }
+                    break;
+            }
+            break;
+
+        case SDL_KEYUP:
+#if !RETRO_REV02
+            --RSDK::SKU::buttonDownCount;
+#endif
+            switch (event.key.keysym.scancode) {
+                default:
+#if RETRO_INPUTDEVICE_KEYBOARD
+                    SKU::ClearKeyState(event.key.keysym.scancode);
+#endif
+                    break;
+
+#if !RETRO_REV02 && RETRO_INPUTDEVICE_KEYBOARD
+                case SDL_SCANCODE_ESCAPE:
+                    RSDK::SKU::specialKeyStates[0] = false;
+                    SKU::ClearKeyState(event.key.keysym.scancode);
+                    break;
+
+                case SDL_SCANCODE_RETURN:
+                    RSDK::SKU::specialKeyStates[1] = false;
+                    SKU::ClearKeyState(event.key.keysym.scancode);
+                    break;
+#endif
+                case SDL_SCANCODE_BACKSPACE: engine.gameSpeed = 1; break;
+            }
+            break;
+
+        case SDL_QUIT: isRunning = false; break;
+    }
+
+        if (!isRunning)
+            return false;
+    }
+
+    return isRunning;
 #endif
     return true;
 }
@@ -1019,7 +1408,7 @@ void RenderDevice::GetWindowSize(int32 *width, int32 *height)
         eglQuerySurface(display, surface, EGL_WIDTH, width);
     if (height)
         eglQuerySurface(display, surface, EGL_HEIGHT, height);
-#elif RETRO_PLATFORM == RETRO_SWITCH
+#elif RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_WIIU
     if (width)
         *width = 1920;
     if (height)
@@ -1031,7 +1420,11 @@ void RenderDevice::SetupImageTexture(int32 width, int32 height, uint8 *imagePixe
 {
     if (imagePixels && isInitialized) {
         glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_WIIU && HACK_SUBIMAGE2D
+        // TODO
+#else
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, imagePixels);
+#endif
     }
 }
 
@@ -1079,7 +1472,11 @@ void RenderDevice::SetupVideoTexture_YUV420(int32 width, int32 height, uint8 *yP
     }
 
     glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_WIIU && HACK_SUBIMAGE2D
+    // TODO
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#endif
 }
 
 void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
@@ -1127,7 +1524,11 @@ void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8 *yP
     }
 
     glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_WIIU && HACK_SUBIMAGE2D
+    // TODO
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#endif
 }
 void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
                                             int32 strideV)
@@ -1166,7 +1567,11 @@ void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yP
     }
 
     glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_WIIU && HACK_SUBIMAGE2D
+    // TODO
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#endif
 }
 
 void RenderDevice::SetLinear(bool32 linear)

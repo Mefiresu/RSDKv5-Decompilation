@@ -91,6 +91,7 @@ enum GameRegions {
 #define RETRO_iOS     (6)
 #define RETRO_ANDROID (7)
 #define RETRO_UWP     (8)
+#define RETRO_WIIU    (9)
 
 // ============================
 // PLATFORMS (used mostly in legacy but could come in handy here)
@@ -142,6 +143,11 @@ enum GameRegions {
 #elif defined __linux__
 #define RETRO_PLATFORM   (RETRO_LINUX)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
+#elif defined __WIIU__
+#define RETRO_PLATFORM   (RETRO_WIIU)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
+
+#define BASE_PATH "RSDKv5/"
 #else
 #define RETRO_PLATFORM   (RETRO_WIN)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
@@ -417,6 +423,32 @@ enum GameRegions {
 #undef RETRO_INPUTDEVICE_SDL2
 #define RETRO_INPUTDEVICE_SDL2 (1)
 
+#elif RETRO_PLATFORM == RETRO_WIIU
+
+#ifdef RSDK_USE_SDL2
+#undef RETRO_RENDERDEVICE_SDL2
+#define RETRO_RENDERDEVICE_SDL2 (1)
+#undef RETRO_AUDIODEVICE_SDL2
+#define RETRO_AUDIODEVICE_SDL2 (1)
+#undef RETRO_INPUTDEVICE_SDL2
+#define RETRO_INPUTDEVICE_SDL2 (1)
+
+#elif defined(RSDK_USE_OGL)
+#undef RETRO_RENDERDEVICE_EGL
+#define RETRO_RENDERDEVICE_EGL (1)
+#undef RETRO_INPUTDEVICE_SDL2
+#define RETRO_INPUTDEVICE_SDL2 (1)
+#undef RETRO_AUDIODEVICE_SDL2
+#define RETRO_AUDIODEVICE_SDL2 (1)
+
+#else
+#error RSDK_USE_SDL2 or RSDK_USE_OGL must be defined.
+#endif //! RSDK_USE_SDL2
+
+#undef RETRO_INPUTDEVICE_KEYBOARD
+#define RETRO_INPUTDEVICE_KEYBOARD (0)
+#undef RETRO_USING_MOUSE
+
 #endif
 
 #if RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_UWP
@@ -526,6 +558,15 @@ extern "C" {
 #include <androidHelpers.hpp>
 
 #undef RETRO_USING_MOUSE
+
+#elif RETRO_PLATFORM == RETRO_WIIU
+#include <whb/proc.h>
+
+#if RETRO_RENDERDEVICE_EGL
+#include <EGL/egl.h> // EGL library
+#include <GLES2/gl2.h>
+#endif
+
 #endif
 
 #if RETRO_RENDERDEVICE_SDL2 || RETRO_INPUTDEVICE_SDL2 || RETRO_AUDIODEVICE_SDL2
